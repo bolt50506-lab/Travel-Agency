@@ -222,7 +222,7 @@ export class MockFlightProvider implements IFlightProvider {
     }
 
     if (seededRandom(seed + 200) < 0.25) {
-      const oldPrice = 500 + Math.floor(seededRandom(seed) * 1000);
+      const oldPrice = 65000 + Math.floor(seededRandom(seed) * 150000);
       const newPrice = Math.round(oldPrice * (1 + (seededRandom(seed + 300) - 0.4) * 0.2));
 
       return {
