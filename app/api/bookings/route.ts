@@ -273,6 +273,15 @@ export async function POST(req: NextRequest) {
       });
     }
 
+    await supabaseAdmin.from('supplier_payables').insert({
+      booking_id: booking.id,
+      supplier_name: body.supplierName || details.supplier || 'Unassigned supplier',
+      payable_amount: pricing.supplierCost,
+      paid_amount: 0,
+      currency: 'PKR',
+      status: 'OPEN',
+    });
+
     const notificationError = (await supabaseAdmin.from('notifications').insert({
       customer_id: customer.id,
       booking_id: booking.id,
