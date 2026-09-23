@@ -9,6 +9,7 @@ import {
   HeartPulse, Repeat2, WalletCards, Network, UserRoundSearch, ChevronRight,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { BrandLogo } from '@/components/brand/logo';
 
 const sidebarLinks = [
   { href: '/admin', label: 'Dashboard', icon: LayoutDashboard },
@@ -45,19 +46,10 @@ export function AdminSidebar() {
 
   return (
     <aside className="fixed inset-y-0 left-0 z-40 hidden w-64 border-r border-border/70 bg-card/95 backdrop-blur md:flex md:flex-col">
-      <div className="flex h-16 shrink-0 items-center gap-3 border-b border-border/70 px-5">
-        <div className="relative flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm">
-          <span className="text-sm font-black">D</span>
-          <span className="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full bg-emerald-400 ring-2 ring-card" />
-        </div>
-        <div className="min-w-0">
-          <p className="truncate text-sm font-bold tracking-tight">Destino</p>
-          <p className="text-[11px] text-muted-foreground">Travel operations</p>
-        </div>
-      </div>
+      <div className="flex h-16 shrink-0 items-center border-b border-border/70 px-5"><BrandLogo compact /></div>
 
       <div className="border-b border-border/70 px-4 py-3">
-        <div className="rounded-xl bg-gradient-to-r from-primary/10 via-primary/5 to-transparent px-3 py-2">
+        <div className="rounded-xl bg-gradient-to-r from-amber-500/15 via-primary/5 to-transparent px-3 py-2">
           <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-primary">Workspace</p>
           <p className="mt-0.5 text-xs text-muted-foreground">Agency control center</p>
         </div>
