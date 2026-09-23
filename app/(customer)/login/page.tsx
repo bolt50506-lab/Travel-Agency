@@ -35,7 +35,7 @@ export default function LoginPage() {
       }
 
       toast.success('Welcome back! You are now logged in.');
-      router.push(data.user?.profile?.role === 'admin' || data.user?.profile?.role === 'agent' ? '/admin' : '/');
+      router.push(data.user?.profile?.role === 'admin' ? '/admin' : data.user?.profile?.role === 'agent' ? '/agent' : '/');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong');
     } finally {
@@ -51,7 +51,7 @@ export default function LoginPage() {
             <div className="flex h-10 w-10 items-center justify-center rounded-md bg-primary">
               <Globe className="h-6 w-6 text-primary-foreground" />
             </div>
-            <span className="text-2xl font-bold tracking-tight">Voyago</span>
+            <span className="text-2xl font-bold tracking-tight">Destino Travels</span>
           </Link>
         </div>
 
