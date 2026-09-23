@@ -11,9 +11,15 @@ type QueryResult<T = any> = {
 const postgrestUrl =
   process.env.POSTGREST_URL || 'http://127.0.0.1:3002';
 
-const jwtSecret =
-  process.env.POSTGREST_JWT_SECRET ||
-  'build-placeholder-secret-that-is-long-enough';
+const jwtSecret = (() => {
+  const value = process.env.POSTGREST_JWT_SECRET;
+  if (!value) {
+    if (process.env.NODE_ENV === 'production') throw new Error('POSTGREST_JWT_SECRET is required in production');
+    return 'build-placeholder-secret-that-is-long-enough';
+  }
+  if (value.length < 32) throw new Error('POSTGREST_JWT_SECRET must be at least 32 characters');
+  return value;
+})();
 
 function base64Url(value: string) {
   return Buffer.from(value).toString('base64url');
