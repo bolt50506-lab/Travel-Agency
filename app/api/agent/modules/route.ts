@@ -63,9 +63,17 @@ export async function GET(req: NextRequest) {
     }
 
     const meta: Record<string, unknown> = {};
-    if (moduleName === 'travelers' || moduleName === 'quotations') {
+    if (moduleName === 'travelers' || moduleName === 'quotations' || moduleName === 'payments') {
       const result = await supabaseAdmin.from('customers').select('id,full_name,email').eq('created_by', actor.id).order('full_name').limit(200);
       if (result.error) throw result.error; meta.customers = result.data || [];
+    }
+    if (moduleName === 'payments') {
+      const ids = await bookingIds(agent.id);
+      if (ids.length) {
+        const result = await supabaseAdmin.from('bookings').select('id,reference,customer_price,currency').in('id', ids).order('created_at', { ascending: false }).limit(200);
+        if (result.error) throw result.error;
+        meta.bookings = result.data || [];
+      }
     }
     return successResponse({ module: moduleName, fields: cfg.fields, rows: data, meta });
   } catch (err) {
@@ -81,7 +89,7 @@ export async function POST(req: NextRequest) {
     const agent = await requireAgentRecord(actor.id);
     const body = await req.json();
     const moduleName = String(body.module || '');
-    if (!['customers','travelers','quotations'].includes(moduleName)) return errorResponse('This module is read-only for agents', 'READ_ONLY_MODULE', 403);
+    if (!['customers','travelers','quotations'].includes(moduleName)) return errorResponse('Use the payment workflow for payment submissions', 'READ_ONLY_MODULE', 403);
     const cfg = configs[moduleName];
     const values = clean(body.data || {}, cfg.fields);
 
