@@ -9,7 +9,7 @@ import { createSessionToken } from '@/lib/auth/server';
 function verifyPassword(password: string, stored: string) {
   const [scheme, n, r, p, salt, encodedHash] = stored.split('$');
   if (scheme !== 'scrypt' || !n || !r || !p || !salt || !encodedHash) return false;
-  const hash = crypto.scryptSync(password, salt, Number(encodedHash.length ? n : 16384), {
+  const hash = crypto.scryptSync(password, salt, 64, {
     N: Number(n),
     r: Number(r),
     p: Number(p),
