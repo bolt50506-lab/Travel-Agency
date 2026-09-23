@@ -34,19 +34,19 @@ export default function Home() {
 
         <div className="relative container-page py-14 md:py-20 lg:py-24">
           <div className="max-w-4xl animate-in fade-in slide-in-from-bottom-3 duration-700">
-            <div className="mb-6 inline-flex items-center gap-2 rounded-full border-2 border-white bg-[#e6391f] px-5 py-3 text-sm font-black tracking-wide text-white shadow-[0_10px_30px_rgba(0,0,0,0.45)] ring-4 ring-white/30">
+            <div id="hero-workflow-badge" className="!mb-6 !inline-flex !items-center !gap-2 !rounded-full !border-2 !border-white !bg-[#e6391f] !px-5 !py-3 !text-sm !font-black !tracking-wide !text-white !opacity-100 !shadow-2xl !shadow-black/60 !ring-4 !ring-white/40 !backdrop-blur-none">
               <Sparkles className="h-4 w-4 text-orange-500" />
               <span>Search, compare and book with a real agency workflow</span>
             </div>
             <h1 className="max-w-4xl text-5xl font-black leading-[0.98] tracking-[-0.04em] text-white drop-shadow-2xl sm:text-6xl md:text-7xl lg:text-[5.5rem]">
-              Travel made
+              Your next trip,
               <span className="block bg-gradient-to-r from-orange-400 via-rose-300 to-white bg-clip-text pb-2 font-serif italic font-bold text-transparent">
-                personal.
+                made effortless.
               </span>
             </h1>
             <div className="mt-6 h-px w-24 bg-gradient-to-r from-orange-500 to-transparent" />
             <p className="mt-5 max-w-2xl text-base font-medium leading-7 text-white/80 md:text-lg">
-              Search flights and hotels, compare options, secure your booking, and let our travel team handle the journey from booking to fulfillment.
+              Find flights and hotels, lock in the details, submit payment securely, and let your travel team handle the fulfillment.
             </p>
           </div>
 
