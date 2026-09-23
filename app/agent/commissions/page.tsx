@@ -1,2 +1,5 @@
-import { AgentModulePage } from '@/components/agent/agent-module-page';
-export default function AgentCommissionsPage(){return <AgentModulePage title="Commissions" description="View agent commission records and booking earnings." />;}
+import AgentRecords from '@/components/agent/agent-records';
+
+export default function Page() {
+  return <AgentRecords module="commissions" />;
+}
