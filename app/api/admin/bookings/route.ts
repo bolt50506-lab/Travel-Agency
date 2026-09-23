@@ -75,7 +75,9 @@ export async function GET(req: NextRequest) {
     if (!rows.length) return successResponse({ bookings: [], total: 0 });
 
     const bookingIds = rows.map((booking: any) => booking.id);
-    const customerIds = [...new Set(rows.map((booking: any) => booking.customer_id).filter(Boolean))];
+    const customerIds = Array.from(
+      new Set(rows.map((booking: any) => booking.customer_id).filter(Boolean))
+    );
 
     const [customersResult, fulfillmentResult] = await Promise.all([
       customerIds.length
