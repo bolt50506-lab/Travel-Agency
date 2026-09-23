@@ -92,6 +92,21 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       status: 'pending',
     });
 
+    if (Number(agent.commission_rate || 0) > 0) {
+      const commissionRate = Number(agent.commission_rate);
+      const margin = Math.max(0, total - supplierCost - taxes + discount);
+      await supabaseAdmin.from('agent_commissions').insert({
+        booking_id: booking.id,
+        agent_id: agent.id,
+        basis_amount: margin,
+        commission_type: 'percentage_of_margin',
+        commission_rate: commissionRate,
+        commission_amount: Math.round(margin * commissionRate) / 100,
+        currency: 'PKR',
+        status: 'PENDING',
+      });
+    }
+
     await supabaseAdmin.from('quotations').update({
       status: 'CONVERTED',
       updated_at: new Date().toISOString(),
