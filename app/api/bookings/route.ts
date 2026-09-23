@@ -20,15 +20,16 @@ async function findCustomer(actorId: string, email: string, phone: string, name:
     if (data) return data;
   }
 
-  const { data: existing } = await supabaseAdmin
-    .from('customers')
-    .select('*')
-    .eq('email', email)
-    .order('created_at', { ascending: true })
-    .limit(1)
-    .maybeSingle();
-
-  if (existing) return existing;
+  if (!agentMode) {
+    const { data: existing } = await supabaseAdmin
+      .from('customers')
+      .select('*')
+      .eq('email', email)
+      .order('created_at', { ascending: true })
+      .limit(1)
+      .maybeSingle();
+    if (existing) return existing;
+  }
 
   const { data, error } = await supabaseAdmin.from('customers').insert({
     user_id: agentMode ? null : actorId,
