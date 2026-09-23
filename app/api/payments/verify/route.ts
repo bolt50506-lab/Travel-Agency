@@ -5,7 +5,7 @@ import { requireAdmin } from '@/lib/auth/server';
 
 export async function POST(req:NextRequest){
  try{
-  const actor=await requireStaff(); const body=await req.json();
+  const actor=await requireAdmin(); const body=await req.json();
   if(!body.paymentId)return errorResponse('Payment ID is required','VALIDATION_ERROR',400);
   const status=body.action==='reject'?'rejected':'verified';
   const {data:payment,error}=await supabaseAdmin.from('payments').select('*').eq('id',body.paymentId).maybeSingle();
