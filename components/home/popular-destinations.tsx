@@ -3,12 +3,12 @@ import Image from 'next/image';
 import { ArrowRight } from 'lucide-react';
 
 const destinations = [
-  { city: 'London', country: 'United Kingdom', image: 'https://images.pexels.com/photos/10180377/pexels-photo-10180377.jpeg?auto=compress&cs=tinysrgb&w=600', priceFrom: 320 },
-  { city: 'Dubai', country: 'UAE', image: 'https://images.pexels.com/photos/7974839/pexels-photo-7974839.jpeg?auto=compress&cs=tinysrgb&w=600', priceFrom: 450 },
-  { city: 'Tokyo', country: 'Japan', image: 'https://images.pexels.com/photos/28807189/pexels-photo-28807189.jpeg?auto=compress&cs=tinysrgb&w=600', priceFrom: 680 },
-  { city: 'Sydney', country: 'Australia', image: 'https://images.pexels.com/photos/37930273/pexels-photo-37930273.jpeg?auto=compress&cs=tinysrgb&w=600', priceFrom: 890 },
-  { city: 'Toronto', country: 'Canada', image: 'https://images.pexels.com/photos/39627996/pexels-photo-39627996.jpeg?auto=compress&cs=tinysrgb&w=600', priceFrom: 290 },
-  { city: 'Baku', country: 'Azerbaijan', image: 'https://images.pexels.com/photos/38509992/pexels-photo-38509992.jpeg?auto=compress&cs=tinysrgb&w=600', priceFrom: 380 },
+  { city: 'London', country: 'United Kingdom', image: 'https://images.pexels.com/photos/10180377/pexels-photo-10180377.jpeg?auto=compress&cs=tinysrgb&w=600', priceFrom: 95000 },
+  { city: 'Dubai', country: 'UAE', image: 'https://images.pexels.com/photos/7974839/pexels-photo-7974839.jpeg?auto=compress&cs=tinysrgb&w=600', priceFrom: 55000 },
+  { city: 'Tokyo', country: 'Japan', image: 'https://images.pexels.com/photos/28807189/pexels-photo-28807189.jpeg?auto=compress&cs=tinysrgb&w=600', priceFrom: 140000 },
+  { city: 'Sydney', country: 'Australia', image: 'https://images.pexels.com/photos/37930273/pexels-photo-37930273.jpeg?auto=compress&cs=tinysrgb&w=600', priceFrom: 180000 },
+  { city: 'Toronto', country: 'Canada', image: 'https://images.pexels.com/photos/39627996/pexels-photo-39627996.jpeg?auto=compress&cs=tinysrgb&w=600', priceFrom: 160000 },
+  { city: 'Baku', country: 'Azerbaijan', image: 'https://images.pexels.com/photos/38509992/pexels-photo-38509992.jpeg?auto=compress&cs=tinysrgb&w=600', priceFrom: 65000 },
 ];
 
 export function PopularDestinations() {
@@ -17,7 +17,7 @@ export function PopularDestinations() {
       <div className="flex items-end justify-between mb-6">
         <div>
           <h2 className="text-2xl font-bold tracking-tight">Popular Destinations</h2>
-          <p className="text-sm text-muted-foreground mt-1">Trending travel spots our customers love</p>
+          <p className="text-sm text-muted-foreground mt-1">Explore popular routes with starting fares shown in PKR</p>
         </div>
         <Link href="/flights" className="text-sm font-medium text-primary hover:underline hidden sm:block">
           View all <ArrowRight className="inline h-3 w-3" />
@@ -43,7 +43,7 @@ export function PopularDestinations() {
               <div className="absolute bottom-0 left-0 right-0 p-3">
                 <p className="text-sm font-semibold text-white">{dest.city}</p>
                 <p className="text-xs text-white/70">{dest.country}</p>
-                <p className="text-xs text-white/90 mt-1">From ${dest.priceFrom}</p>
+                <p className="text-xs text-white/90 mt-1">From PKR {dest.priceFrom.toLocaleString('en-PK')}</p>
               </div>
             </div>
           </Link>
