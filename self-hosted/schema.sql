@@ -68,7 +68,7 @@ CREATE TABLE IF NOT EXISTS profiles (
   full_name text,
   phone text,
   cnic text,
-  role text NOT NULL DEFAULT 'customer' CHECK (role IN ('admin', 'agent', 'customer')),
+  role text NOT NULL DEFAULT 'customer',
   is_active boolean NOT NULL DEFAULT true,
   created_at timestamptz DEFAULT now(),
   updated_at timestamptz DEFAULT now()
