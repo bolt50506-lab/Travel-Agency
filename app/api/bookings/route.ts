@@ -45,6 +45,39 @@ async function findCustomer(actorId: string, email: string, phone: string, name:
   return data;
 }
 
+function customerVisibleDetails(details: any, type: 'flight' | 'hotel') {
+  if (!details || typeof details !== 'object') return {};
+  if (type === 'flight') {
+    return {
+      id: details.id,
+      airline: details.airline,
+      airlineCode: details.airlineCode,
+      segments: details.segments,
+      passengers: details.passengers,
+      cabinClass: details.cabinClass,
+      tripType: details.tripType,
+      origin: details.origin,
+      destination: details.destination,
+      departureDate: details.departureDate,
+      returnDate: details.returnDate,
+      totalPrice: details.totalPrice,
+    };
+  }
+  return {
+    id: details.id,
+    name: details.name,
+    address: details.address,
+    city: details.city,
+    country: details.country,
+    starRating: details.starRating,
+    room: details.room,
+    checkIn: details.checkIn,
+    checkOut: details.checkOut,
+    guests: details.guests,
+    totalPrice: details.totalPrice,
+  };
+}
+
 function mapBooking(row: any) {
   const item = Array.isArray(row.booking_items) ? row.booking_items[0] : null;
   const task = Array.isArray(row.fulfillment_tasks) ? row.fulfillment_tasks[0] : row.fulfillment_tasks;
@@ -63,8 +96,8 @@ function mapBooking(row: any) {
     contactPhone: row.contact_phone,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
-    flightDetails: row.type === 'flight' ? metadata : undefined,
-    hotelDetails: row.type === 'hotel' ? metadata : undefined,
+    flightDetails: row.type === 'flight' ? customerVisibleDetails(metadata, 'flight') : undefined,
+    hotelDetails: row.type === 'hotel' ? customerVisibleDetails(metadata, 'hotel') : undefined,
     fulfillment: task ? {
       id: task.id,
       bookingId: row.id,
@@ -237,6 +270,8 @@ export async function POST(req: NextRequest) {
         : `${details.name || 'Hotel'} — ${details.room?.type || 'Room'}`,
       supplier_offer_id: details.id || null,
       supplier_property_id: body.type === 'hotel' ? details.id || null : null,
+      supplier_provider: String(body.supplierName || details.provider || ''),
+      supplier_api: String(body.supplierApi || details.provider || details.apiSource || 'manual_supplier'),
       supplier_cost: pricing.supplierCost,
       customer_price: pricing.customerPrice,
       currency: 'PKR',
