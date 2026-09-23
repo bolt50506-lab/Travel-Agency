@@ -10,6 +10,7 @@ const transitions: Record<string,{status:any,fulfillment?:any}> = {
   mark_ticketed:{status:'TICKETED',fulfillment:'completed'},
   mark_voucher_issued:{status:'VOUCHER_ISSUED',fulfillment:'completed'},
   request_customer_action:{status:'CUSTOMER_ACTION_REQUIRED',fulfillment:'in_progress'},
+  add_note:{status:'AGENCY_PROCESSING',fulfillment:'in_progress'},
   cancel:{status:'CANCELLED',fulfillment:'cancelled'},
   refund:{status:'REFUND_PROCESSING',fulfillment:'in_progress'},
 };
@@ -23,7 +24,8 @@ export async function POST(req:NextRequest,{params}:{params:{id:string}}){
  try{
   const actor=await requireStaff(); const body=await req.json(); const action=body.action as string; const transition=transitions[action];
   if(!transition)return errorResponse('Unknown action','VALIDATION_ERROR',400);
-  const {data:booking,error:be}=await supabaseAdmin.from('bookings').select('*').eq('id',params.id).single(); if(be||!booking)return errorResponse('Booking not found','NOT_FOUND',404);
+  const {data:booking,error:be}=await supabaseAdmin.from('bookings').select('*,payments(status)').eq('id',params.id).single(); if(be||!booking)return errorResponse('Booking not found','NOT_FOUND',404);
+  if(['mark_ticketed','mark_voucher_issued'].includes(action) && !(booking.payments||[]).some((p:any)=>p.status==='verified')) return errorResponse('A verified payment is required before issuing customer-facing travel documents','PAYMENT_REQUIRED',409);
   const now=new Date().toISOString();
   const bookingPatch:any={updated_at:now,status:transition.status};
   if(body.supplierName!==undefined)bookingPatch.supplier_name=body.supplierName;
@@ -39,7 +41,7 @@ export async function POST(req:NextRequest,{params}:{params:{id:string}}){
    await supabaseAdmin.from('fulfillment_tasks').update(patch).eq('id',task.id);
   }
   await supabaseAdmin.from('booking_status_history').insert({booking_id:params.id,status:transition.status,description:body.message||action,changed_by:actor.id,metadata:body});
-  if(action==='add_note'&&body.text){await supabaseAdmin.from('fulfillment_notes').insert({fulfillment_task_id:task?.id,author_id:actor.id,note:body.text});}
+  if(action==='add_note'&&body.text&&task?.id){await supabaseAdmin.from('fulfillment_notes').insert({fulfillment_task_id:task.id,author_id:actor.id,note:body.text});}
   const {data:updated}=await supabaseAdmin.from('bookings').select('*,fulfillment_tasks(*)').eq('id',params.id).single();
   return successResponse(updated);
  }catch(err){if(err instanceof Error&&err.message==='UNAUTHORIZED_STAFF')return errorResponse('Staff access required','FORBIDDEN',403);console.error(err);return errorResponse('Unable to update fulfillment','INTERNAL_ERROR',500);}
