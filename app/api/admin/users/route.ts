@@ -51,6 +51,9 @@ export async function POST(req: NextRequest) {
 
     if (!email || !password || !firstName) return errorResponse('Email, password and first name are required', 'VALIDATION_ERROR', 400);
     if (password.length < 8) return errorResponse('Password must be at least 8 characters', 'VALIDATION_ERROR', 400);
+    if (!['admin', 'agent', 'customer'].includes(role)) return errorResponse('Invalid role. Use admin, agent or customer.', 'VALIDATION_ERROR', 400);
+    const commissionRate = Number(body.commissionRate ?? 0);
+    if (!Number.isFinite(commissionRate) || commissionRate < 0 || commissionRate > 100) return errorResponse('Commission percentage must be between 0 and 100', 'VALIDATION_ERROR', 400);
 
     const { data: existing } = await supabaseAdmin.from('local_users').select('id').eq('email', email).maybeSingle();
     if (existing) return errorResponse('An account with this email already exists', 'EMAIL_EXISTS', 409);
@@ -67,10 +70,14 @@ export async function POST(req: NextRequest) {
     }
 
     if (role === 'agent') {
+      let agentCode = String(body.agentCode || '').trim();
+      if (!agentCode) agentCode = `AG-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
+      const { data: agency } = await supabaseAdmin.from('agencies').select('id').eq('is_active', true).order('created_at', { ascending: true }).limit(1).maybeSingle();
       const { error: agentError } = await supabaseAdmin.from('agents').insert({
         user_id: account.id,
-        agent_code: String(body.agentCode || ('AG-' + Math.random().toString(36).slice(2, 8).toUpperCase())),
-        commission_rate: Number(body.commissionRate || 0),
+        agency_id: agency?.id || null,
+        agent_code: agentCode,
+        commission_rate: commissionRate,
         is_active: true,
       });
       if (agentError) {
@@ -83,7 +90,8 @@ export async function POST(req: NextRequest) {
     return successResponse({ id: account.id, email, role }, 201);
   } catch (err) {
     console.error('Admin user create error:', err);
-    return errorResponse('Unable to create user', 'USER_CREATE_FAILED', 500);
+    const message = err instanceof Error ? err.message : String(err);
+    return errorResponse(`Unable to create user: ${message}`, 'USER_CREATE_FAILED', 500);
   }
 }
 
@@ -113,7 +121,13 @@ export async function PATCH(req: NextRequest) {
       const { error } = await supabaseAdmin.from('local_users').update({ password_hash: hashPassword(String(body.password)) }).eq('id', body.id);
       if (error) throw error;
     }
-    if (body.role === 'agent') {
+    const normalizedRole = body.role !== undefined ? String(body.role).trim().toLowerCase() : undefined;
+    if (normalizedRole && !['admin', 'agent', 'customer'].includes(normalizedRole)) return errorResponse('Invalid role. Use admin, agent or customer.', 'VALIDATION_ERROR', 400);
+    if (body.commissionRate !== undefined) {
+      const rate = Number(body.commissionRate);
+      if (!Number.isFinite(rate) || rate < 0 || rate > 100) return errorResponse('Commission percentage must be between 0 and 100', 'VALIDATION_ERROR', 400);
+    }
+    if (normalizedRole === 'agent') {
       const existing = await supabaseAdmin.from('agents').select('id').eq('user_id', body.id).maybeSingle();
       if (!existing.data) {
         const { error } = await supabaseAdmin.from('agents').insert({
@@ -133,6 +147,7 @@ export async function PATCH(req: NextRequest) {
     return successResponse({ saved: true });
   } catch (err) {
     console.error('Admin user update error:', err);
-    return errorResponse('Unable to update user', 'USER_UPDATE_FAILED', 500);
+    const message = err instanceof Error ? err.message : String(err);
+    return errorResponse(`Unable to update user: ${message}`, 'USER_UPDATE_FAILED', 500);
   }
 }
