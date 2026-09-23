@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic';
 
 import { NextRequest } from 'next/server';
 import { successResponse, errorResponse } from '@/lib/utils/api';
+import { requireAdmin } from '@/lib/auth/server';
 
 const mockUsers = [
   { id: 'user-1', email: 'john.smith@example.com', role: 'customer', firstName: 'John', lastName: 'Smith', createdAt: '2025-09-01T10:00:00Z' },
@@ -13,6 +14,7 @@ const mockUsers = [
 
 export async function GET(req: NextRequest) {
   try {
+    await requireAdmin();
     const { searchParams } = new URL(req.url);
     const role = searchParams.get('role');
     const search = searchParams.get('search')?.toLowerCase();
