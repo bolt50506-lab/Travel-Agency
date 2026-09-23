@@ -91,6 +91,7 @@ export default function FulfillmentPage() {
   const [docFilename, setDocFilename] = useState('');
   const [docType, setDocType] = useState('AIRLINE_TICKET');
   const [docVisible, setDocVisible] = useState(false);
+  const [docFile, setDocFile] = useState<File | null>(null);
 
   useEffect(() => {
     fetchQueue();
@@ -125,6 +126,7 @@ export default function FulfillmentPage() {
     setDocFilename('');
     setDocType('AIRLINE_TICKET');
     setDocVisible(false);
+    setDocFile(null);
 
     fetch(`/api/admin/fulfillment/${id}`)
       .then(async (res) => {
@@ -165,6 +167,29 @@ export default function FulfillmentPage() {
       fetchQueue();
     } catch (err) {
       setActionResult(err instanceof Error ? err.message : 'Action failed');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const uploadDocument = async () => {
+    if (!selectedBooking || !docFile) return;
+    setActionLoading(true);
+    setActionResult(null);
+    try {
+      const form = new FormData();
+      form.set('bookingId', selectedBooking.id);
+      form.set('documentType', docType);
+      form.set('customerVisible', String(docVisible));
+      form.set('file', docFile);
+      const res = await fetch('/api/admin/documents', { method: 'POST', body: form });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Document upload failed');
+      setActionResult('Document uploaded successfully');
+      setDocFile(null);
+      await openBooking(selectedBooking.id);
+    } catch (err) {
+      setActionResult(err instanceof Error ? err.message : 'Document upload failed');
     } finally {
       setActionLoading(false);
     }
@@ -376,7 +401,8 @@ export default function FulfillmentPage() {
 
                 {/* Document Upload */}
                 <Card className="p-3">
-                  <h4 className="text-xs font-semibold text-muted-foreground mb-3">Upload Document</h4>
+                  <h4 className="text-xs font-semibold text-muted-foreground mb-1">Upload Document</h4>
+                  <p className="text-xs text-muted-foreground mb-3">PDF, JPG, PNG or WEBP · maximum 15 MB. Stored on the agency server.</p>
                   <div className="grid gap-3 sm:grid-cols-2">
                     <div>
                       <Label className="text-xs">Document Type</Label>
@@ -394,15 +420,15 @@ export default function FulfillmentPage() {
                       </Select>
                     </div>
                     <div>
-                      <Label className="text-xs">Filename</Label>
-                      <Input value={docFilename} onChange={(e) => setDocFilename(e.target.value)} placeholder="ticket.pdf" className="mt-1 h-8 text-sm" />
+                      <Label className="text-xs">File</Label>
+                      <Input type="file" accept=".pdf,.jpg,.jpeg,.png,.webp" className="mt-1 h-8 text-xs" onChange={(e) => setDocFile(e.target.files?.[0] || null)} />
                     </div>
                   </div>
                   <div className="flex items-center gap-2 mt-3">
                     <input type="checkbox" id="docVisible" checked={docVisible} onChange={(e) => setDocVisible(e.target.checked)} className="h-4 w-4 rounded border-border" />
                     <Label htmlFor="docVisible" className="text-sm">Make visible to customer immediately</Label>
                   </div>
-                  <Button size="sm" variant="outline" className="mt-3" disabled={actionLoading || !docFilename} onClick={() => doAction('upload_document', { documentType: docType, filename: docFilename, customerVisible: docVisible })}>
+                  <Button size="sm" variant="outline" className="mt-3" disabled={actionLoading || !docFile} onClick={() => void uploadDocument()}>
                     <FileText className="h-4 w-4 mr-1" /> Upload Document
                   </Button>
                 </Card>
