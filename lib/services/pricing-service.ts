@@ -23,6 +23,16 @@ export type PricingResult = {
 
 const round = (value: number) => Math.round(value * 100) / 100;
 
+export async function getActivePricingRules() {
+  const { data, error } = await supabaseAdmin
+    .from('pricing_rules')
+    .select('id,rule_type,scope,scope_value,value,is_active,priority,effective_from,effective_to')
+    .order('priority', { ascending: false })
+    .limit(500);
+  if (error) throw error;
+  return data || [];
+}
+
 function matches(rule: any, context: PricingContext) {
   if (!rule.is_active) return false;
   if (rule.effective_from && new Date(rule.effective_from) > new Date()) return false;
@@ -50,6 +60,7 @@ export async function calculateAgencyPrice(input: {
   discount?: number;
   context: PricingContext;
   requestedCustomerPrice?: number;
+  rules?: any[];
 }): Promise<PricingResult> {
   const supplierCost = round(Number(input.supplierCost));
   const taxes = round(Math.max(0, Number(input.taxes || 0)));
@@ -57,14 +68,8 @@ export async function calculateAgencyPrice(input: {
   const discount = round(Math.max(0, Number(input.discount || 0)));
   if (!Number.isFinite(supplierCost) || supplierCost < 0) throw new Error('INVALID_SUPPLIER_COST');
 
-  const { data, error } = await supabaseAdmin
-    .from('pricing_rules')
-    .select('id,rule_type,scope,scope_value,value,is_active,priority,effective_from,effective_to')
-    .order('priority', { ascending: false })
-    .limit(500);
-  if (error) throw error;
-
-  const applicable = (data || []).filter((rule: any) => matches(rule, input.context));
+  const rules = input.rules || await getActivePricingRules();
+  const applicable = rules.filter((rule: any) => matches(rule, input.context));
   const percentage = applicable
     .filter((r: any) => r.rule_type === 'percentage_markup')
     .sort((a: any, b: any) => Number(b.priority) - Number(a.priority))[0];
@@ -95,5 +100,51 @@ export async function calculateAgencyPrice(input: {
     appliedRuleIds: applicable
       .filter((r: any) => [percentage?.id, fixed?.id, ...minimumRules.map((r: any) => r.id)].includes(r.id))
       .map((r: any) => r.id),
+  };
+}
+
+
+export async function priceFlightOffer(offer: any, rules?: any[]) {
+  const supplierCost = Number(offer.basePrice?.amount || 0);
+  const taxes = Number(offer.taxesAndFees?.amount || 0);
+  const pricing = await calculateAgencyPrice({
+    supplierCost,
+    taxes,
+    context: {
+      product: 'flight',
+      supplier: offer.provider,
+      airline: offer.segments?.[0]?.airline?.code,
+      route: offer.segments?.[0]?.origin?.code && offer.segments?.[0]?.destination?.code
+        ? `${offer.segments[0].origin.code}-${offer.segments[0].destination.code}`
+        : undefined,
+    },
+    rules,
+  });
+  return {
+    ...offer,
+    basePrice: { amount: pricing.supplierCost, currency: 'PKR' },
+    taxesAndFees: { amount: pricing.taxes, currency: 'PKR' },
+    totalPrice: { amount: pricing.customerPrice, currency: 'PKR' },
+  };
+}
+
+export async function priceHotelRoom(room: any, hotel: any, rules?: any[]) {
+  const taxes = Number(room.taxesAndFees?.amount || 0);
+  const supplierCost = Math.max(0, Number(room.totalPrice?.amount || 0) - taxes);
+  const pricing = await calculateAgencyPrice({
+    supplierCost,
+    taxes,
+    context: {
+      product: 'hotel',
+      supplier: hotel?.provider,
+      hotelCategory: hotel?.starRating ? `${hotel.starRating}_star` : undefined,
+    },
+    rules,
+  });
+  return {
+    ...room,
+    pricePerNight: { ...room.pricePerNight, amount: pricing.customerPrice / Math.max(1, Number(room.totalPrice?.amount || 0) ? Number(room.totalPrice.amount) / Math.max(1, Number(room.pricePerNight?.amount || 1)) : 1) },
+    totalPrice: { amount: pricing.customerPrice, currency: 'PKR' },
+    taxesAndFees: { amount: pricing.taxes, currency: 'PKR' },
   };
 }
