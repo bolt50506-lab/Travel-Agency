@@ -9,7 +9,7 @@ import { errorResponse, successResponse } from '@/lib/utils/api';
 const configs: Record<string, { table: string; fields: string[] }> = {
   customers: { table: 'customers', fields: ['full_name','email','phone','cnic','passport_number','passport_expiry','nationality','address','city'] },
   travelers: { table: 'travelers', fields: ['customer_id','first_name','last_name','date_of_birth','gender','nationality','cnic','passport_number','passport_expiry','relationship','notes'] },
-  quotations: { table: 'quotations', fields: ['reference','customer_id','title','status','currency','supplier_cost','subtotal','discount','taxes','total','valid_until','notes'] },
+  quotations: { table: 'quotations', fields: ['reference','customer_id','title','service_type','status','currency','supplier_cost','subtotal','discount','taxes','total','valid_until','notes'] },
   bookings: { table: 'bookings', fields: ['reference','type','status','contact_email','contact_phone','customer_price','currency','supplier_name','supplier_reference','notes','created_at'] },
   payments: { table: 'payments', fields: ['booking_id','reference','method','amount','currency','status','provider_name','provider_transaction_id','created_at'] },
   commissions: { table: 'agent_commissions', fields: ['booking_id','basis_amount','commission_type','commission_rate','commission_amount','currency','status','paid_at','created_at'] },
@@ -104,6 +104,7 @@ export async function POST(req: NextRequest) {
       values.agent_id = agent.id;
       values.reference = values.reference || ('QT-' + new Date().getFullYear() + '-' + Math.random().toString(36).slice(2,8).toUpperCase());
       values.currency = 'PKR';
+      values.service_type = values.service_type || 'flight';
       values.status = values.status || 'DRAFT';
       values.total = Math.max(0, subtotal - discount + taxes);
       values.agency_margin = Math.max(0, Number(values.total) - supplierCost - taxes + discount);
