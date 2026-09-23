@@ -1998,21 +1998,7 @@ END $$;
 
 
 
-
-DO $$
-DECLARE t text;
-BEGIN
-  FOR t IN SELECT unnest(ARRAY[
-    'travelers','leads','followups','quotations','quotation_items','packages','package_items',
-    'umrah_packages','umrah_bookings','umrah_pilgrims','hajj_packages','visa_applications',
-    'visa_documents','insurance_products','insurance_policies','reissue_requests',
-    'agent_commissions','supplier_payables','expenses','accounting_entries','b2b_agencies'
-  ]) LOOP
-    EXECUTE format('
-    EXECUTE format(
-      '
-  END LOOP;
-END $$;
+ 
 
 -- Public catalog reads. Writes remain staff-only.
 
