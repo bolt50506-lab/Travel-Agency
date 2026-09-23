@@ -169,7 +169,7 @@ export default function FlightCheckoutPage() {
           bookingReference: bookData.reference,
           amount: offer!.totalPrice,
           method: paymentMethod,
-          billingAddress: undefined,
+          paymentReference,
         }),
       });
       const paymentData = await paymentRes.json();
