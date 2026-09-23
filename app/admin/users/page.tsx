@@ -68,7 +68,8 @@ export default function AdminUsersPage() {
         <div><Label>Phone</Label><Input value={form.phone||''} onChange={e=>setForm({...form,phone:e.target.value})}/></div>
         <div><Label>Role</Label><Select value={form.role||'customer'} onValueChange={v=>setForm({...form,role:v})}><SelectTrigger><SelectValue/></SelectTrigger><SelectContent>{roles.map(r=><SelectItem key={r.id} value={r.name}>{r.name}</SelectItem>)}</SelectContent></Select></div>
         {form.role==='agent'&&<div><Label>Commission %</Label><Input type="number" min="0" max="100" step="0.01" value={form.commissionRate??0} onChange={e=>setForm({...form,commissionRate:e.target.value})}/></div>}
-        {form.role==='agent'&&<div><Label>Agent code (optional)</Label><Input value={form.agentCode||''} onChange={e=>setForm({...form,agentCode:e.target.value})}/></div>\n        <div><Label>{editing?'New password (optional)':'Password'}</Label><Input type="password" value={form.password||''} onChange={e=>setForm({...form,password:e.target.value})}/></div>
+        {form.role==='agent'&&<div><Label>Agent code (optional)</Label><Input value={form.agentCode||''} onChange={e=>setForm({...form,agentCode:e.target.value})}/></div>
+        <div><Label>{editing?'New password (optional)':'Password'}</Label><Input type="password" value={form.password||''} onChange={e=>setForm({...form,password:e.target.value})}/></div>
         <div><Label>Status</Label><Select value={form.isActive===false?'false':'true'} onValueChange={v=>setForm({...form,isActive:v==='true'})}><SelectTrigger><SelectValue/></SelectTrigger><SelectContent><SelectItem value="true">Active</SelectItem><SelectItem value="false">Inactive</SelectItem></SelectContent></Select></div>
       </div>
       <div className="mt-4 flex gap-2"><Button disabled={saving} onClick={()=>void save()}>{saving?'Saving...':'Save'}</Button><Button variant="outline" onClick={()=>{setOpen(false);setEditing(null)}}>Cancel</Button></div>
