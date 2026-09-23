@@ -4,9 +4,7 @@ import { supabaseAdmin } from '@/lib/supabase/server';
 import { getServerActor } from '@/lib/auth/server';
 
 function makeReference() {
-  const year = new Date().getFullYear();
-  const suffix = Math.random().toString(36).slice(2, 8).toUpperCase();
-  return `AG-${year}-${suffix}`;
+  return `AG-${new Date().getFullYear()}-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
 }
 
 async function findCustomer(actorId: string | null, email: string, phone: string, name: string) {
@@ -38,21 +36,76 @@ async function findCustomer(actorId: string | null, email: string, phone: string
   return data;
 }
 
-export async function GET(req: NextRequest) {
+function mapBooking(row: any) {
+  const item = Array.isArray(row.booking_items) ? row.booking_items[0] : null;
+  const task = Array.isArray(row.fulfillment_tasks) ? row.fulfillment_tasks[0] : row.fulfillment_tasks;
+  const metadata = item?.metadata || {};
+
+  return {
+    id: row.id,
+    reference: row.reference,
+    type: row.type,
+    status: row.status,
+    totalAmount: { amount: Number(row.customer_price || 0), currency: row.currency || 'PKR' },
+    supplierCost: { amount: Number(row.supplier_cost || 0), currency: row.currency || 'PKR' },
+    margin: { amount: Number(row.agency_margin || 0), currency: row.currency || 'PKR' },
+    userId: row.customer_id || '',
+    contactEmail: row.contact_email,
+    contactPhone: row.contact_phone,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+    flightDetails: row.type === 'flight' ? metadata : undefined,
+    hotelDetails: row.type === 'hotel' ? metadata : undefined,
+    fulfillment: task ? {
+      id: task.id,
+      bookingId: row.id,
+      status: String(task.status || 'pending').toUpperCase(),
+      supplierName: task.supplier_name || undefined,
+      supplierReference: task.supplier_reference || undefined,
+      pnr: task.pnr || undefined,
+      ticketNumber: task.ticket_number || undefined,
+      hotelConfirmationNumber: task.hotel_confirmation_number || undefined,
+      notes: [],
+      createdAt: task.created_at,
+      updatedAt: task.updated_at,
+      startedAt: task.started_at || undefined,
+      completedAt: task.completed_at || undefined,
+    } : undefined,
+    documents: [],
+    timeline: (row.booking_status_history || [])
+      .sort((a: any, b: any) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
+      .map((event: any) => ({
+        id: event.id,
+        status: event.status,
+        description: event.description || '',
+        timestamp: event.created_at,
+        metadata: event.metadata || undefined,
+      })),
+  };
+}
+
+export async function GET(_req: NextRequest) {
   try {
     const actor = await getServerActor();
     if (!actor) return errorResponse('Login required', 'AUTH_REQUIRED', 401);
 
-    let query = supabaseAdmin.from('bookings').select('*').order('created_at', { ascending: false });
+    let query = supabaseAdmin
+      .from('bookings')
+      .select('*,booking_items(*),booking_status_history(*),fulfillment_tasks(*)')
+      .order('created_at', { ascending: false })
+      .limit(200);
+
     if (actor.role === 'customer') {
       const { data: customer } = await supabaseAdmin.from('customers').select('id').eq('user_id', actor.id).maybeSingle();
-      if (!customer) return successResponse({ bookings: [] });
+      if (!customer) return successResponse({ bookings: [], total: 0 });
       query = query.eq('customer_id', customer.id);
     }
 
     const { data, error } = await query;
     if (error) throw error;
-    return successResponse({ bookings: data || [], total: data?.length || 0 });
+
+    const bookings = (data || []).map(mapBooking);
+    return successResponse({ bookings, total: bookings.length });
   } catch (err) {
     console.error('Get bookings error:', err);
     return errorResponse('Unable to load bookings', 'INTERNAL_ERROR', 500);
@@ -77,7 +130,6 @@ export async function POST(req: NextRequest) {
     const customer = await findCustomer(actor?.id || null, body.contactEmail, body.contactPhone, customerName);
     const amount = Number(body.totalAmount.amount);
     const currency = body.totalAmount.currency || 'PKR';
-
     const reference = makeReference();
     const supplierCost = Number(body.supplierCost || amount);
     const markup = Math.max(0, amount - supplierCost);
@@ -104,7 +156,7 @@ export async function POST(req: NextRequest) {
 
     if (error || !booking) throw error || new Error('Booking could not be created');
 
-    const { error: itemError } = await supabaseAdmin.from('booking_items').insert({
+    const itemError = (await supabaseAdmin.from('booking_items').insert({
       booking_id: booking.id,
       item_type: body.type,
       description: body.type === 'flight'
@@ -116,32 +168,33 @@ export async function POST(req: NextRequest) {
       customer_price: amount,
       currency,
       metadata: details,
-    });
-    if (itemError) throw itemError;
+    })).error;
+    if (itemError) console.error('Booking item warning:', itemError);
 
-    const { error: historyError } = await supabaseAdmin.from('booking_status_history').insert({
+    const historyError = (await supabaseAdmin.from('booking_status_history').insert({
       booking_id: booking.id,
       status: 'BOOKING_REQUESTED',
       description: 'Booking request received by agency',
       changed_by: actor?.id || null,
       metadata: { source: 'customer_checkout' },
-    });
-    if (historyError) throw historyError;
+    })).error;
+    if (historyError) console.error('Booking history warning:', historyError);
 
-    const { error: taskError } = await supabaseAdmin.from('fulfillment_tasks').insert({
+    const taskError = (await supabaseAdmin.from('fulfillment_tasks').insert({
       booking_id: booking.id,
       status: 'pending',
-    });
-    if (taskError) throw taskError;
+    })).error;
+    if (taskError) console.error('Fulfillment task warning:', taskError);
 
-    await supabaseAdmin.from('notifications').insert({
+    const notificationError = (await supabaseAdmin.from('notifications').insert({
       customer_id: customer.id,
       booking_id: booking.id,
       type: 'BOOKING_RECEIVED',
       title: 'Booking request received',
       body: `Your agency booking request ${reference} has been received. Payment and supplier confirmation are tracked separately.`,
       metadata: { reference },
-    });
+    })).error;
+    if (notificationError) console.error('Notification warning:', notificationError);
 
     return successResponse({
       id: booking.id,
