@@ -1,17 +1,1 @@
-# Database Setup
-
-The project uses Supabase PostgreSQL.
-
-## Fresh project
-
-1. Create a new Supabase project.
-2. Copy `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, and the server-only `SUPABASE_SERVICE_ROLE_KEY`.
-3. Run every SQL file in `supabase/migrations/` in filename order, or use the Supabase CLI migrations workflow.
-4. Do not commit credentials.
-5. The final migration creates the private `travel-documents` Storage bucket.
-
-## Production rule
-
-Customer checkout creates an internal agency booking. It does not purchase from an airline/hotel supplier. Staff completes supplier fulfillment externally until `automatic_supplier_booking_enabled` is explicitly enabled and a tested adapter is installed.
-
-Default currency is PKR and timezone is Asia/Karachi.
+# Database Setup\n\nThe production deployment uses PostgreSQL running on the agency server PC. PostgREST provides a local REST interface to that PostgreSQL database.\n\n## Fresh self-hosted installation\n\n1. Copy .env.example to .env.local.\n2. Set strong local database/PostgREST secrets.\n3. Generate the schema:\n\n   npm.cmd run selfhost:prepare\n\n4. Start PostgreSQL and PostgREST:\n\n   docker compose -f docker-compose.self-hosted.yml up -d\n\nThe existing SQL migrations remain the source of truth. The preparation script removes Supabase-specific RLS/Auth/Storage statements and produces self-hosted/schema.sql.\n\n## Admin\n\nAfter the database is running:\n\n   npm.cmd run selfhost:create-admin\n\nThe command interactively creates the first local administrator.\n\n## Production rule\n\nCustomer checkout creates an internal agency booking. It does not purchase from an airline/hotel supplier. Staff completes supplier fulfillment externally until automatic_supplier_booking_enabled is explicitly enabled and a tested adapter is installed.\n\nDefault currency is PKR and timezone is Asia/Karachi.\n
