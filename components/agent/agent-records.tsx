@@ -11,14 +11,14 @@ type Field = { key: string; label: string; type?: 'text'|'date'|'number'|'select
 const formFields: Record<AgentModule, Field[]> = {
   customers: [{key:'full_name',label:'Full name'},{key:'email',label:'Email'},{key:'phone',label:'Phone'},{key:'cnic',label:'CNIC'},{key:'passport_number',label:'Passport number'},{key:'passport_expiry',label:'Passport expiry',type:'date'},{key:'nationality',label:'Nationality'},{key:'city',label:'City'}],
   travelers: [{key:'customer_id',label:'Customer',type:'select'},{key:'first_name',label:'First name'},{key:'last_name',label:'Last name'},{key:'date_of_birth',label:'Date of birth',type:'date'},{key:'gender',label:'Gender'},{key:'nationality',label:'Nationality'},{key:'passport_number',label:'Passport number'},{key:'passport_expiry',label:'Passport expiry',type:'date'},{key:'relationship',label:'Relationship'}],
-  quotations: [{key:'customer_id',label:'Customer',type:'select'},{key:'title',label:'Title'},{key:'subtotal',label:'Subtotal (PKR)',type:'number'},{key:'discount',label:'Discount (PKR)',type:'number'},{key:'taxes',label:'Taxes (PKR)',type:'number'},{key:'total',label:'Total (PKR)',type:'number'},{key:'valid_until',label:'Valid until',type:'date'},{key:'notes',label:'Notes'}],
-  bookings: [], payments: [], commissions: []
+  quotations: [{key:'customer_id',label:'Customer',type:'select'},{key:'title',label:'Title'},{key:'supplier_cost',label:'Supplier cost (PKR)',type:'number'},{key:'subtotal',label:'Selling subtotal (PKR)',type:'number'},{key:'discount',label:'Discount (PKR)',type:'number'},{key:'taxes',label:'Taxes (PKR)',type:'number'},{key:'valid_until',label:'Valid until',type:'date'},{key:'notes',label:'Notes'}],
+  bookings: [{key:'customer_id',label:'Customer',type:'select'},{key:'type',label:'Type',type:'select'},{key:'contact_email',label:'Contact email'},{key:'contact_phone',label:'Contact phone'},{key:'supplier_cost',label:'Supplier cost (PKR)',type:'number'},{key:'total_amount',label:'Selling price (PKR)',type:'number'},{key:'taxes',label:'Taxes (PKR)',type:'number'},{key:'fees',label:'Service fees (PKR)',type:'number'},{key:'discount',label:'Discount (PKR)',type:'number'},{key:'supplier_name',label:'Supplier'},{key:'notes',label:'Notes'}], payments: [], commissions: []
 };
 
 const displayFields: Record<AgentModule,string[]> = {
   customers: ['full_name','email','phone','city','passport_number'],
   travelers: ['first_name','last_name','passport_number','passport_expiry','nationality'],
-  quotations: ['reference','title','status','total','currency','valid_until'],
+  quotations: ['reference','title','status','supplier_cost','total','agency_margin','currency','valid_until'],
   bookings: ['reference','type','status','customer_price','currency','created_at'],
   payments: ['reference','method','amount','currency','status','created_at'],
   commissions: ['booking_id','basis_amount','commission_rate','commission_amount','currency','status','created_at']
@@ -50,7 +50,10 @@ export default function AgentRecords({ module }: { module: AgentModule }) {
   async function save() {
     setSaving(true); setError('');
     try {
-      const response=await fetch('/api/agent/modules',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({module,data:form})});
+      const payload = module === 'bookings'
+        ? { module, data: { ...form, totalAmount: { amount: Number(form.total_amount || 0), currency: 'PKR' }, supplierCost: Number(form.supplier_cost || 0), taxes: Number(form.taxes || 0), fees: Number(form.fees || 0), discount: Number(form.discount || 0) } }
+        : { module, data: form };
+      const response=await fetch(module === 'bookings' ? '/api/bookings' : '/api/agent/modules',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
       const result=await response.json();
       if(!response.ok) throw new Error(result.error||'Unable to save');
       setForm({}); await load();
@@ -71,14 +74,14 @@ export default function AgentRecords({ module }: { module: AgentModule }) {
       <div className="mb-4 flex items-center gap-2"><Plus className="h-4 w-4"/><h2 className="font-semibold">Add record</h2></div>
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {fields.map(field=><label key={field.key} className="text-sm"><span className="mb-1 block text-muted-foreground">{field.label}</span>
-          {field.type==='select'?<select className="h-10 w-full rounded-md border bg-background px-3" value={form[field.key]||''} onChange={e=>setForm({...form,[field.key]:e.target.value})}><option value="">Select customer</option>{customers.map(c=><option key={c.id} value={c.id}>{c.full_name}</option>)}</select>
+          {field.type==='select'?<select className="h-10 w-full rounded-md border bg-background px-3" value={form[field.key]||''} onChange={e=>setForm({...form,[field.key]:e.target.value})}><option value="">{field.key==='type'?'Select type':'Select customer'}</option>{field.key==='type'?<><option value="flight">Flight</option><option value="hotel">Hotel</option></>:customers.map(c=><option key={c.id} value={c.id}>{c.full_name}</option>)}</select>
           :<input className="h-10 w-full rounded-md border bg-background px-3" type={field.type||'text'} value={form[field.key]||''} onChange={e=>setForm({...form,[field.key]:e.target.value})}/>}
         </label>)}
       </div>
       <Button className="mt-4" disabled={saving} onClick={()=>void save()}><Save className="mr-2 h-4 w-4"/>{saving?'Saving…':'Save record'}</Button>
     </Card>}
-    {loading?<Card className="p-10 text-center text-sm text-muted-foreground">Loading…</Card>:<Card className="overflow-hidden"><div className="overflow-x-auto"><table className="w-full text-sm"><thead><tr className="border-b text-left">{columns.map(k=><th key={k} className="p-3 font-medium capitalize">{k.replaceAll('_',' ')}</th>)}</tr></thead><tbody>
-      {rows.length===0?<tr><td colSpan={columns.length} className="p-8 text-center text-muted-foreground">No records found.</td></tr>:rows.map(row=><tr key={row.id} className="border-b last:border-0">{columns.map(k=><td key={k} className="max-w-[260px] truncate p-3">{String(row[k]??'—')}</td>)}</tr>)}
+    {loading?<Card className="p-10 text-center text-sm text-muted-foreground">Loading…</Card>:<Card className="overflow-hidden"><div className="overflow-x-auto"><table className="w-full text-sm"><thead><tr className="border-b text-left">{columns.map(k=><th key={k} className="p-3 font-medium capitalize">{k.replaceAll('_',' ')}</th>)}{module==='quotations'&&<th className="p-3 font-medium">Actions</th>}</tr></thead><tbody>
+      {rows.length===0?<tr><td colSpan={columns.length} className="p-8 text-center text-muted-foreground">No records found.</td></tr>:rows.map(row=><tr key={row.id} className="border-b last:border-0">{columns.map(k=><td key={k} className="max-w-[260px] truncate p-3">{String(row[k]??'—')}</td>)}{module==='quotations'&&<td className="p-3"><Button size="sm" variant="outline" disabled={!['APPROVED','SENT','VIEWED'].includes(String(row.status))} onClick={async()=>{setError('');try{const r=await fetch('/api/agent/quotations/'+row.id+'/convert',{method:'POST'});const d=await r.json();if(!r.ok)throw new Error(d.error||'Conversion failed');await load();}catch(e){setError(e instanceof Error?e.message:'Conversion failed');}}}>Convert to booking</Button></td>}</tr>)}
     </tbody></table></div></Card>}
   </div>;
 }
