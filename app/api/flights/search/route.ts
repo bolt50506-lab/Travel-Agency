@@ -46,7 +46,9 @@ export async function GET(req: NextRequest) {
     }
 
     const result = await flightService.searchFlights(validation.data);
-    return successResponse(result);
+    const rules = await getActivePricingRules();
+    const offers = await Promise.all(result.offers.map((offer) => priceFlightOffer(offer, rules)));
+    return successResponse({ ...result, offers });
   } catch (err) {
     console.error('Flight search error:', err);
     return errorResponse('Something went wrong while searching flights', 'INTERNAL_ERROR', 500);
