@@ -68,6 +68,7 @@ export interface FlightOffer {
   refundable: boolean;
   provider: string;
   validUntil: string;
+  pricingToken?: string;
 }
 
 export interface FlightSearchResponse {
