@@ -52,6 +52,32 @@ async function api(path, options = {}) {
     const fullName = (await ask(rl, 'Admin full name: ')).trim();
     if (!email || !password || !fullName) throw new Error('Email, password and full name are required.');
 
+    // Repair the built-in application roles before creating the first admin.
+    // This is safe on an existing database and does not delete bookings or users.
+    for (const role of [
+      { name: 'admin', description: 'Full system administrator' },
+      { name: 'agent', description: 'Travel agent' },
+      { name: 'customer', description: 'Customer' },
+    ]) {
+      const existingRole = await api('/roles?select=id&name=eq.' + encodeURIComponent(role.name));
+      if (!Array.isArray(existingRole) || existingRole.length === 0) {
+        await api('/roles', { method: 'POST', body: JSON.stringify(role) });
+      }
+    }
+
+    const builtInAdminRole = await api('/admin_roles?select=id&name=eq.admin');
+    if (!Array.isArray(builtInAdminRole) || builtInAdminRole.length === 0) {
+      await api('/admin_roles', {
+        method: 'POST',
+        body: JSON.stringify({
+          name: 'admin',
+          description: 'Full system administration access',
+          permissions: ['*'],
+          is_active: true,
+        }),
+      });
+    }
+
     const existing = await api('/local_users?select=id&email=eq.' + encodeURIComponent(email));
     if (Array.isArray(existing) && existing.length) throw new Error('An account with this email already exists.');
 
