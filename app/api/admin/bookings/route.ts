@@ -78,7 +78,7 @@ export async function GET(req: NextRequest) {
 
     return successResponse({ bookings: rows, total: rows.length });
   } catch (err) {
-    if (err instanceof Error && err.message === 'UNAUTHORIZED_STAFF') {
+    if (err instanceof Error && err.message === 'UNAUTHORIZED_ADMIN') {
       return errorResponse('Staff access required', 'FORBIDDEN', 403);
     }
     console.error('Admin bookings GET error:', err);
@@ -203,7 +203,7 @@ export async function POST(req: NextRequest) {
       message: 'Booking created successfully',
     }, 201);
   } catch (err) {
-    if (err instanceof Error && err.message === 'UNAUTHORIZED_STAFF') {
+    if (err instanceof Error && err.message === 'UNAUTHORIZED_ADMIN') {
       return errorResponse('Staff access required', 'FORBIDDEN', 403);
     }
     console.error('Admin booking creation error:', err);
