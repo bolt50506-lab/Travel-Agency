@@ -135,12 +135,18 @@ export async function GET(_req: NextRequest) {
 
     let query = supabaseAdmin
       .from('bookings')
-      .select('*,booking_items(*),booking_status_history(*),fulfillment_tasks(*)')
+      .select('*')
       .order('created_at', { ascending: false })
       .limit(200);
 
     if (actor.role === 'customer') {
-      const { data: customer } = await supabaseAdmin.from('customers').select('id').eq('user_id', actor.id).maybeSingle();
+      const { data: customer, error: customerError } = await supabaseAdmin
+        .from('customers')
+        .select('id')
+        .eq('user_id', actor.id)
+        .maybeSingle();
+
+      if (customerError) throw customerError;
       if (!customer) return successResponse({ bookings: [], total: 0 });
       query = query.eq('customer_id', customer.id);
     } else if (actor.role === 'agent') {
@@ -150,17 +156,70 @@ export async function GET(_req: NextRequest) {
       return errorResponse('Forbidden', 'FORBIDDEN', 403);
     }
 
-    const { data, error } = await query;
+    const { data: rows, error } = await query;
     if (error) throw error;
 
-    const bookings = (data || []).map(mapBooking);
-    return successResponse({ bookings, total: bookings.length });
-  } catch (err) {
+    const bookings = rows || [];
+    if (!bookings.length) return successResponse({ bookings: [], total: 0 });
+
+    const bookingIds = bookings.map((row: any) => row.id);
+
+    // Load related records separately instead of relying on PostgREST
+    // relationship embedding. This keeps the endpoint compatible with the
+    // self-hosted PostgREST schema as migrations evolve.
+    const [itemsResult, historyResult, fulfillmentResult] = await Promise.all([
+      supabaseAdmin.from('booking_items').select('*').in('booking_id', bookingIds),
+      supabaseAdmin.from('booking_status_history').select('*').in('booking_id', bookingIds),
+      supabaseAdmin.from('fulfillment_tasks').select('*').in('booking_id', bookingIds),
+    ]);
+
+    if (itemsResult.error) console.error('Booking items load warning:', itemsResult.error);
+    if (historyResult.error) console.error('Booking history load warning:', historyResult.error);
+    if (fulfillmentResult.error) console.error('Fulfillment load warning:', fulfillmentResult.error);
+
+    const itemsByBooking = new Map<string, any[]>();
+    for (const item of itemsResult.data || []) {
+      const list = itemsByBooking.get(item.booking_id) || [];
+      list.push(item);
+      itemsByBooking.set(item.booking_id, list);
+    }
+
+    const historyByBooking = new Map<string, any[]>();
+    for (const event of historyResult.data || []) {
+      const list = historyByBooking.get(event.booking_id) || [];
+      list.push(event);
+      historyByBooking.set(event.booking_id, list);
+    }
+
+    const fulfillmentByBooking = new Map<string, any[]>();
+    for (const task of fulfillmentResult.data || []) {
+      const list = fulfillmentByBooking.get(task.booking_id) || [];
+      list.push(task);
+      fulfillmentByBooking.set(task.booking_id, list);
+    }
+
+    const result = bookings.map((row: any) => mapBooking({
+      ...row,
+      booking_items: itemsByBooking.get(row.id) || [],
+      booking_status_history: historyByBooking.get(row.id) || [],
+      fulfillment_tasks: fulfillmentByBooking.get(row.id) || [],
+    }));
+
+    return successResponse({ bookings: result, total: result.length });
+  } catch (err: any) {
     console.error('Get bookings error:', err);
-    return errorResponse('Unable to load bookings', 'INTERNAL_ERROR', 500);
+    return errorResponse(
+      err?.message || 'Unable to load bookings',
+      'BOOKINGS_LOAD_FAILED',
+      500,
+      {
+        code: err?.code,
+        details: err?.details,
+        hint: err?.hint,
+      }
+    );
   }
 }
-
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
