@@ -5,7 +5,7 @@ import { successResponse, errorResponse } from '@/lib/utils/api';
 import { supabaseAdmin } from '@/lib/supabase/server';
 import { getServerActor } from '@/lib/auth/server';
 import { requireAgentRecord } from '@/lib/auth/agent';
-import { calculateAgencyPrice } from '@/lib/services/pricing-service';
+import { calculateAgencyPrice, openPricingSnapshot } from '@/lib/services/pricing-service';
 
 function makeReference() {
   return `AG-${new Date().getFullYear()}-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
@@ -159,9 +159,13 @@ export async function POST(req: NextRequest) {
     const agentContactPhone = body.contactPhone || customer.phone || 'N/A';
     if (!agentContactEmail || !agentContactPhone) return errorResponse('Customer contact details are required', 'VALIDATION_ERROR', 400);
 
-    const inferredSupplierCost = body.type === 'flight'
-      ? Number(details.basePrice?.amount || 0)
-      : Math.max(0, Number(details.room?.totalPrice?.amount || 0) - Number(details.room?.taxesAndFees?.amount || 0));
+    const pricingSnapshot = details.pricingToken ? openPricingSnapshot(String(details.pricingToken)) : null;
+    if (details.pricingToken && !pricingSnapshot) return errorResponse('The selected offer has expired. Please search again.', 'PRICING_EXPIRED', 409);
+    const inferredSupplierCost = pricingSnapshot
+      ? Number(pricingSnapshot.supplierCost)
+      : body.type === 'flight'
+        ? Number(details.basePrice?.amount || 0)
+        : Math.max(0, Number(details.room?.totalPrice?.amount || 0) - Number(details.room?.taxesAndFees?.amount || 0));
     const supplierCost = Number(body.supplierCost ?? details.supplierCost ?? inferredSupplierCost);
     const requestedPrice = Number(body.totalAmount?.amount ?? 0);
     const currency = String(body.totalAmount?.currency || 'PKR').toUpperCase();
@@ -170,9 +174,11 @@ export async function POST(req: NextRequest) {
     if (!Number.isFinite(requestedPrice) || requestedPrice <= 0) return errorResponse('A positive booking amount is required', 'VALIDATION_ERROR', 400);
     if (supplierCost > requestedPrice) return errorResponse('Selling price cannot be below supplier cost', 'PRICE_BELOW_COST', 409);
 
-    const inferredTaxes = body.type === 'flight'
-      ? Number(details.taxesAndFees?.amount || 0)
-      : Number(details.room?.taxesAndFees?.amount || 0);
+    const inferredTaxes = pricingSnapshot
+      ? Number(pricingSnapshot.taxes)
+      : body.type === 'flight'
+        ? Number(details.taxesAndFees?.amount || 0)
+        : Number(details.room?.taxesAndFees?.amount || 0);
     const taxes = Number(body.taxes ?? inferredTaxes ?? 0);
     const fees = Number(body.fees || 0);
     const discount = Number(body.discount || 0);
