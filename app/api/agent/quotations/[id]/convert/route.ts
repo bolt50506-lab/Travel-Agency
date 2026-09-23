@@ -47,13 +47,13 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     const reference = bookingReference();
     const { data: booking, error: bookingError } = await supabaseAdmin.from('bookings').insert({
       reference,
-      type: 'flight',
+      type: ['flight','hotel'].includes(String(quote.service_type)) ? String(quote.service_type) : 'flight',
       status: 'BOOKING_REQUESTED',
       customer_id: customer.id,
       agent_id: agent.id,
       agency_id: agent.agency_id || null,
-      contact_email: quote.contact_email || customer.email || '',
-      contact_phone: quote.contact_phone || customer.phone || '',
+      contact_email: customer.email || 'no-email@customer.local',
+      contact_phone: customer.phone || 'N/A',
       supplier_cost: supplierCost,
       agency_markup: Math.max(0, total - supplierCost - taxes + discount),
       taxes,
@@ -70,7 +70,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
 
     await supabaseAdmin.from('booking_items').insert({
       booking_id: booking.id,
-      item_type: 'flight',
+      item_type: ['flight','hotel'].includes(String(quote.service_type)) ? String(quote.service_type) : 'flight',
       description: quote.title || `Quotation ${quote.reference}`,
       supplier_cost: supplierCost,
       customer_price: total,
