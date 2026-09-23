@@ -10,6 +10,7 @@ import { PopularRoutes } from '@/components/home/popular-routes';
 import { FeaturedHotels } from '@/components/home/featured-hotels';
 import { WhyBookWithUs } from '@/components/home/why-book-with-us';
 import { CustomerSupport } from '@/components/home/customer-support';
+import { UmrahPackages } from '@/components/home/umrah-packages';
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState('flights');
@@ -78,6 +79,7 @@ export default function Home() {
         <PopularDestinations />
         <PopularRoutes />
         <FeaturedHotels />
+        <UmrahPackages />
         <WhyBookWithUs />
         <CustomerSupport />
       </div>
