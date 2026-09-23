@@ -17,7 +17,13 @@ type SessionPayload = {
 };
 
 function secret() {
-  return process.env.LOCAL_AUTH_SECRET || process.env.POSTGREST_JWT_SECRET || 'build-placeholder-secret-that-is-long-enough';
+  const value = process.env.LOCAL_AUTH_SECRET || process.env.POSTGREST_JWT_SECRET;
+  if (!value) {
+    if (process.env.NODE_ENV === 'production') throw new Error('LOCAL_AUTH_SECRET is required in production');
+    return 'build-placeholder-secret-that-is-long-enough';
+  }
+  if (value.length < 32) throw new Error('LOCAL_AUTH_SECRET must be at least 32 characters');
+  return value;
 }
 
 function encode(value: unknown) {
