@@ -51,7 +51,10 @@ export async function POST(req: NextRequest) {
 
     if (!email || !password || !firstName) return errorResponse('Email, password and first name are required', 'VALIDATION_ERROR', 400);
     if (password.length < 8) return errorResponse('Password must be at least 8 characters', 'VALIDATION_ERROR', 400);
-    if (!['admin', 'agent', 'customer'].includes(role)) return errorResponse('Invalid role. Use admin, agent or customer.', 'VALIDATION_ERROR', 400);
+    if (!['admin', 'agent', 'customer'].includes(role)) {
+      const { data: customRole } = await supabaseAdmin.from('admin_roles').select('id').eq('name', role).eq('is_active', true).maybeSingle();
+      if (!customRole) return errorResponse('Invalid or inactive role', 'VALIDATION_ERROR', 400);
+    }
     const commissionRate = Number(body.commissionRate ?? 0);
     if (!Number.isFinite(commissionRate) || commissionRate < 0 || commissionRate > 100) return errorResponse('Commission percentage must be between 0 and 100', 'VALIDATION_ERROR', 400);
 
@@ -122,7 +125,10 @@ export async function PATCH(req: NextRequest) {
       if (error) throw error;
     }
     const normalizedRole = body.role !== undefined ? String(body.role).trim().toLowerCase() : undefined;
-    if (normalizedRole && !['admin', 'agent', 'customer'].includes(normalizedRole)) return errorResponse('Invalid role. Use admin, agent or customer.', 'VALIDATION_ERROR', 400);
+    if (normalizedRole && !['admin', 'agent', 'customer'].includes(normalizedRole)) {
+      const { data: customRole } = await supabaseAdmin.from('admin_roles').select('id').eq('name', normalizedRole).eq('is_active', true).maybeSingle();
+      if (!customRole) return errorResponse('Invalid or inactive role', 'VALIDATION_ERROR', 400);
+    }
     if (body.commissionRate !== undefined) {
       const rate = Number(body.commissionRate);
       if (!Number.isFinite(rate) || rate < 0 || rate > 100) return errorResponse('Commission percentage must be between 0 and 100', 'VALIDATION_ERROR', 400);
