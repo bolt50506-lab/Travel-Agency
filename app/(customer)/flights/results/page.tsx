@@ -27,7 +27,7 @@ export default function FlightResultsPage() {
   const [filters, setFilters] = useState({
     stops: { nonstop: false, oneStop: false },
     airlines: {} as Record<string, boolean>,
-    maxPrice: 5000,
+    maxPrice: 500000,
     departureTime: { morning: false, afternoon: false, evening: false },
   });
 
@@ -239,12 +239,12 @@ export default function FlightResultsPage() {
               </div>
 
               <div>
-                <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Max Price: ${filters.maxPrice}</Label>
+                <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Max Price: PKR ${filters.maxPrice.toLocaleString()}</Label>
                 <input
                   type="range"
-                  min={100}
-                  max={5000}
-                  step={100}
+                  min={5000}
+                  max={500000}
+                  step={5000}
                   value={filters.maxPrice}
                   onChange={(e) => setFilters({ ...filters, maxPrice: parseInt(e.target.value) })}
                   className="mt-2 w-full accent-primary"
