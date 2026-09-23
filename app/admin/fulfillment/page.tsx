@@ -73,6 +73,84 @@ interface BookingDetail {
   timeline: { id: string; status: string; description: string; timestamp: string }[];
 }
 
+function normalizeBookingDetail(raw: any): BookingDetail {
+  const money = (amount: unknown, currency: unknown) => ({
+    amount: Number(amount ?? 0),
+    currency: String(currency || 'PKR'),
+  });
+
+  const fulfillment = Array.isArray(raw.fulfillment_tasks)
+    ? raw.fulfillment_tasks[0]
+    : raw.fulfillment_tasks || raw.fulfillment;
+
+  return {
+    id: raw.id,
+    reference: raw.reference,
+    type: raw.type,
+    status: raw.status,
+    contactEmail: raw.contact_email ?? raw.contactEmail ?? raw.customers?.email ?? '',
+    contactPhone: raw.contact_phone ?? raw.contactPhone ?? raw.customers?.phone ?? '',
+    totalAmount: raw.totalAmount
+      ? money(raw.totalAmount.amount, raw.totalAmount.currency)
+      : money(raw.customer_price ?? raw.total_amount, raw.currency),
+    supplierCost: raw.supplierCost
+      ? money(raw.supplierCost.amount, raw.supplierCost.currency)
+      : raw.supplier_cost != null
+        ? money(raw.supplier_cost, raw.currency)
+        : undefined,
+    margin: raw.margin
+      ? money(raw.margin.amount, raw.margin.currency)
+      : raw.agency_margin != null
+        ? money(raw.agency_margin, raw.currency)
+        : undefined,
+    flightDetails: raw.flightDetails ?? raw.flight_details,
+    hotelDetails: raw.hotelDetails ?? raw.hotel_details,
+    fulfillment: fulfillment
+      ? {
+          id: fulfillment.id,
+          status: String(fulfillment.status || '').toUpperCase(),
+          assignedTo: fulfillment.assigned_to ?? fulfillment.assignedTo,
+          supplierName: fulfillment.supplier_name ?? fulfillment.supplierName,
+          supplierReference: fulfillment.supplier_reference ?? fulfillment.supplierReference,
+          pnr: fulfillment.pnr,
+          ticketNumber: fulfillment.ticket_number ?? fulfillment.ticketNumber,
+          hotelConfirmationNumber:
+            fulfillment.hotel_confirmation_number ?? fulfillment.hotelConfirmationNumber,
+          notes: (fulfillment.notes || []).map((n: any) => ({
+            id: n.id,
+            author: n.author ?? n.author_name ?? n.author_id ?? 'Agency',
+            text: n.text ?? n.note ?? '',
+            createdAt: n.created_at ?? n.createdAt,
+          })),
+          createdAt: fulfillment.created_at ?? fulfillment.createdAt,
+          updatedAt: fulfillment.updated_at ?? fulfillment.updatedAt,
+          startedAt: fulfillment.started_at ?? fulfillment.startedAt,
+          completedAt: fulfillment.completed_at ?? fulfillment.completedAt,
+        },
+      : undefined,
+    documents: (raw.documents || []).map((doc: any) => ({
+      id: doc.id,
+      type: doc.type ?? doc.document_type ?? 'DOCUMENT',
+      filename: doc.filename ?? doc.file_name ?? 'Document',
+      customerVisible: Boolean(doc.customer_visible ?? doc.customerVisible),
+      createdAt: doc.created_at ?? doc.createdAt,
+    })),
+    payments: (raw.payments || []).map((payment: any) => ({
+      id: payment.id,
+      amount: Number(payment.amount ?? 0),
+      currency: payment.currency ?? raw.currency ?? 'PKR',
+      status: payment.status,
+      reference: payment.reference ?? payment.transaction_reference ?? '',
+    })),
+    timeline: (raw.booking_status_history || raw.timeline || []).map((evt: any) => ({
+      id: evt.id,
+      status: evt.status,
+      description: evt.description ?? evt.status ?? '',
+      timestamp: evt.timestamp ?? evt.created_at ?? evt.createdAt,
+    })),
+  };
+}
+
 export default function FulfillmentPage() {
   const [queue, setQueue] = useState<QueueItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -135,12 +213,13 @@ export default function FulfillmentPage() {
         return res.json();
       })
       .then((data) => {
-        setSelectedBooking(data);
-        if (data.fulfillment?.supplierName) setSupplierName(data.fulfillment.supplierName);
-        if (data.fulfillment?.supplierReference) setSupplierRef(data.fulfillment.supplierReference);
-        if (data.fulfillment?.pnr) setPnr(data.fulfillment.pnr);
-        if (data.fulfillment?.ticketNumber) setTicketNumber(data.fulfillment.ticketNumber);
-        if (data.fulfillment?.hotelConfirmationNumber) setHotelConf(data.fulfillment.hotelConfirmationNumber);
+        const booking = normalizeBookingDetail(data);
+        setSelectedBooking(booking);
+        if (booking.fulfillment?.supplierName) setSupplierName(booking.fulfillment.supplierName);
+        if (booking.fulfillment?.supplierReference) setSupplierRef(booking.fulfillment.supplierReference);
+        if (booking.fulfillment?.pnr) setPnr(booking.fulfillment.pnr);
+        if (booking.fulfillment?.ticketNumber) setTicketNumber(booking.fulfillment.ticketNumber);
+        if (booking.fulfillment?.hotelConfirmationNumber) setHotelConf(booking.fulfillment.hotelConfirmationNumber);
         setDetailLoading(false);
       })
       .catch((err) => {
@@ -163,7 +242,7 @@ export default function FulfillmentPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Action failed');
 
-      setSelectedBooking(data);
+      setSelectedBooking(normalizeBookingDetail(data));
       setActionResult('Action completed successfully');
       fetchQueue();
     } catch (err) {
