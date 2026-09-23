@@ -27,6 +27,7 @@ export interface HotelRoom {
   totalPrice: Money;
   taxesAndFees: Money;
   roomsAvailable: number;
+  pricingToken?: string;
 }
 
 export interface HotelOffer {
