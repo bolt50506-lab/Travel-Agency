@@ -125,3 +125,25 @@ export async function POST(req: NextRequest) {
     console.error(err); return errorResponse('Unable to create record', 'CREATE_FAILED', 500);
   }
 }
+
+
+export async function PATCH(req: NextRequest) {
+  try {
+    const actor = await requireAgent();
+    const agent = await requireAgentRecord(actor.id);
+    const body = await req.json();
+    if (body.module !== 'quotations' || !body.id) return errorResponse('Only quotation status can be changed here', 'VALIDATION_ERROR', 400);
+    const status = String(body.status || '');
+    if (!['DRAFT','SENT','VIEWED','APPROVED','EXPIRED','CANCELLED'].includes(status)) return errorResponse('Invalid quotation status', 'VALIDATION_ERROR', 400);
+    const { data: quote, error } = await supabaseAdmin.from('quotations').select('*').eq('id', body.id).eq('agent_id', agent.id).maybeSingle();
+    if (error || !quote) return errorResponse('Quotation not found', 'NOT_FOUND', 404);
+    if (quote.status === 'CONVERTED') return errorResponse('Converted quotations are locked', 'QUOTE_LOCKED', 409);
+    const { data, error: updateError } = await supabaseAdmin.from('quotations').update({ status, updated_at: new Date().toISOString() }).eq('id', quote.id).select('*').single();
+    if (updateError) throw updateError;
+    await supabaseAdmin.from('audit_logs').insert({ user_id: actor.id, action: 'UPDATE', entity_type: 'quotations', entity_id: quote.id, old_value: quote, new_value: data });
+    return successResponse(data);
+  } catch (err) {
+    console.error(err);
+    return errorResponse('Unable to update quotation', 'UPDATE_FAILED', 500);
+  }
+}
