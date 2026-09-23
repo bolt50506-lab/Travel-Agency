@@ -20,7 +20,7 @@ const transitions: Record<string,{status:any,fulfillment?:any}> = {
 
 export async function GET(_req:NextRequest,{params}:{params:{id:string}}){
  try{await requireAdmin();const {data,error}=await supabaseAdmin.from('bookings').select('*,customers(*),booking_items(*),booking_status_history(*),fulfillment_tasks(*),documents(*),payments(*)').eq('id',params.id).maybeSingle();if(error)throw error;if(!data)return errorResponse('Booking not found','NOT_FOUND',404);return successResponse(data);}
- catch(err){if(err instanceof Error&&err.message==='UNAUTHORIZED_STAFF')return errorResponse('Staff access required','FORBIDDEN',403);console.error(err);return errorResponse('Unable to load booking','INTERNAL_ERROR',500);}
+ catch(err){if(err instanceof Error&&err.message==='UNAUTHORIZED_ADMIN')return errorResponse('Admin access required','FORBIDDEN',403);console.error(err);return errorResponse('Unable to load booking','INTERNAL_ERROR',500);}
 }
 
 export async function POST(req:NextRequest,{params}:{params:{id:string}}){
@@ -51,5 +51,5 @@ export async function POST(req:NextRequest,{params}:{params:{id:string}}){
   }
   const {data:updated}=await supabaseAdmin.from('bookings').select('*,fulfillment_tasks(*)').eq('id',params.id).single();
   return successResponse(updated);
- }catch(err){if(err instanceof Error&&err.message==='UNAUTHORIZED_STAFF')return errorResponse('Staff access required','FORBIDDEN',403);console.error(err);return errorResponse('Unable to update fulfillment','INTERNAL_ERROR',500);}
+ }catch(err){if(err instanceof Error&&err.message==='UNAUTHORIZED_ADMIN')return errorResponse('Admin access required','FORBIDDEN',403);console.error(err);return errorResponse('Unable to update fulfillment','INTERNAL_ERROR',500);}
 }
