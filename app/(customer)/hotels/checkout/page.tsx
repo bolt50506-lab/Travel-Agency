@@ -148,6 +148,7 @@ export default function HotelCheckoutPage() {
           bookingReference: bookData.reference,
           amount: selectedRoom!.totalPrice,
           method: paymentMethod,
+          paymentReference,
         }),
       });
       const paymentData = await paymentRes.json();
