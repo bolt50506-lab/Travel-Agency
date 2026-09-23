@@ -6,7 +6,7 @@ Populates the database with realistic development/demo seed data for a Pakistani
 
 ## Data Included
 1. **Roles** — admin, agent, customer
-2. **Agencies** — Demo travel agency (Voyago Travels, Islamabad)
+2. **Agencies** — Demo travel agency (Destino Travels, Islamabad)
 3. **Providers** — Mock flight, hotel, payment, notification providers
 4. **Pricing Rules** — Global 12% markup, minimum margin rules
 5. **Currency Rates** — USD to PKR, EUR to PKR, GBP to PKR, AED to PKR
@@ -35,15 +35,15 @@ ON CONFLICT (name) DO NOTHING;
 -- ============================================================
 INSERT INTO agencies (name, legal_name, country, city, address, phone, email, website, iata_code, settings)
 VALUES (
-  'Voyago Travels',
-  'Voyago Travels (Pvt) Ltd',
+  'Destino Travels',
+  'Destino Travels (Pvt) Ltd',
   'PK',
   'Islamabad',
-  'Blue Area, F-7 Markaz, Islamabad, Pakistan',
-  '+92-51-111-222-333',
-  'info@voyago.pk',
-  'https://voyago.pk',
-  'VT001',
+  'Islamabad, Pakistan',
+  '+92-51-000-0000',
+  'info@destinotravels.com',
+  'https://b2b.destinotravels.com',
+  'DT001',
   '{"default_currency": "PKR", "timezone": "Asia/Karachi", "phone_country_code": "+92"}'::jsonb
 )
 ON CONFLICT DO NOTHING;
@@ -119,10 +119,10 @@ INSERT INTO system_settings (key, value, description, is_sensitive) VALUES
   ('default_timezone', 'Asia/Karachi', 'Default timezone (Pakistan Standard Time)', false),
   ('default_country', 'PK', 'Default country code', false),
   ('phone_country_code', '+92', 'Default phone country code for Pakistan', false),
-  ('agency_name', 'Voyago Travels', 'Travel agency name displayed to customers', false),
-  ('agency_address', 'Blue Area, F-7 Markaz, Islamabad, Pakistan', 'Agency physical address', false),
-  ('agency_phone', '+92-51-111-222-333', 'Agency contact phone', false),
-  ('agency_email', 'info@voyago.pk', 'Agency contact email', false),
+  ('agency_name', 'Destino Travels', 'Travel agency name displayed to customers', false),
+  ('agency_address', 'Islamabad, Pakistan', 'Agency physical address', false),
+  ('agency_phone', '+92-51-000-0000', 'Agency contact phone', false),
+  ('agency_email', 'info@destinotravels.com', 'Agency contact email', false),
   ('min_booking_amount', '1000', 'Minimum booking amount in PKR', false),
   ('max_markup_percentage', '50', 'Maximum allowed markup percentage', false),
   ('payment_proof_required', 'true', 'Require payment proof for manual payments', false),
@@ -134,9 +134,9 @@ ON CONFLICT (key) DO NOTHING;
 -- NOTIFICATION TEMPLATES
 -- ============================================================
 INSERT INTO notification_templates (name, type, channel, subject, body, is_active) VALUES
-  ('booking_received', 'booking_received', 'email', 'Booking Received - {reference}', 'Dear {customer_name},\n\nYour booking request has been received. Our travel team is processing your booking.\n\nReference: {reference}\nAmount: {amount}\n\nWe will notify you once your ticket/voucher is ready.\n\nVoyago Travels', true),
-  ('booking_ticketed', 'booking_ticketed', 'email', 'Your Ticket is Ready - {reference}', 'Dear {customer_name},\n\nYour flight ticket has been issued and is ready for download.\n\nReference: {reference}\nPNR: {pnr}\n\nPlease log in to your account to download your ticket.\n\nVoyago Travels', true),
-  ('booking_voucher_issued', 'booking_voucher_issued', 'email', 'Your Hotel Voucher is Ready - {reference}', 'Dear {customer_name},\n\nYour hotel voucher has been issued and is ready for download.\n\nReference: {reference}\nConfirmation: {confirmation_number}\n\nPlease log in to your account to download your voucher.\n\nVoyago Travels', true),
-  ('payment_verified', 'payment_verified', 'email', 'Payment Verified - {reference}', 'Dear {customer_name},\n\nYour payment of {amount} has been verified. Your booking is now being processed.\n\nReference: {reference}\n\nVoyago Travels', true),
-  ('booking_cancelled', 'booking_cancelled', 'email', 'Booking Cancelled - {reference}', 'Dear {customer_name},\n\nYour booking {reference} has been cancelled. If applicable, a refund will be processed.\n\nVoyago Travels', true)
+  ('booking_received', 'booking_received', 'email', 'Booking Received - {reference}', 'Dear {customer_name},\n\nYour booking request has been received. Our travel team is processing your booking.\n\nReference: {reference}\nAmount: {amount}\n\nWe will notify you once your ticket/voucher is ready.\n\nDestino Travels', true),
+  ('booking_ticketed', 'booking_ticketed', 'email', 'Your Ticket is Ready - {reference}', 'Dear {customer_name},\n\nYour flight ticket has been issued and is ready for download.\n\nReference: {reference}\nPNR: {pnr}\n\nPlease log in to your account to download your ticket.\n\nDestino Travels', true),
+  ('booking_voucher_issued', 'booking_voucher_issued', 'email', 'Your Hotel Voucher is Ready - {reference}', 'Dear {customer_name},\n\nYour hotel voucher has been issued and is ready for download.\n\nReference: {reference}\nConfirmation: {confirmation_number}\n\nPlease log in to your account to download your voucher.\n\nDestino Travels', true),
+  ('payment_verified', 'payment_verified', 'email', 'Payment Verified - {reference}', 'Dear {customer_name},\n\nYour payment of {amount} has been verified. Your booking is now being processed.\n\nReference: {reference}\n\nDestino Travels', true),
+  ('booking_cancelled', 'booking_cancelled', 'email', 'Booking Cancelled - {reference}', 'Dear {customer_name},\n\nYour booking {reference} has been cancelled. If applicable, a refund will be processed.\n\nDestino Travels', true)
 ON CONFLICT (name) DO NOTHING;
