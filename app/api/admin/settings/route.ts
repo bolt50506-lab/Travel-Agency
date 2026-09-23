@@ -24,12 +24,28 @@ export async function PATCH(req: NextRequest) {
     const updates = body.settings || {};
     for (const [key, value] of Object.entries(updates)) {
       if (!['agency', 'booking', 'notifications'].includes(key)) continue;
-      const { error } = await supabaseAdmin.from('app_settings').upsert({
+      const payload = {
         key,
         value: value && typeof value === 'object' ? value : {},
         updated_at: new Date().toISOString(),
-      }, { onConflict: 'key' });
-      if (error) throw error;
+      };
+
+      const { data: existing, error: lookupError } = await supabaseAdmin
+        .from('app_settings')
+        .select('key')
+        .eq('key', key)
+        .maybeSingle();
+
+      if (lookupError) throw lookupError;
+
+      const result = existing
+        ? await supabaseAdmin.from('app_settings').update({
+            value: payload.value,
+            updated_at: payload.updated_at,
+          }).eq('key', key)
+        : await supabaseAdmin.from('app_settings').insert(payload);
+
+      if (result.error) throw result.error;
     }
     return successResponse({ saved: true });
   } catch (err) {
