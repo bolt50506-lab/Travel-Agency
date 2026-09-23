@@ -33,6 +33,9 @@ export async function GET(req: NextRequest) {
     if (search) users = users.filter((u: any) => [u.email,u.firstName,u.lastName,u.phone].some((v) => String(v || '').toLowerCase().includes(search)));
     return successResponse({ users, total: users.length });
   } catch (err) {
+    if (err instanceof Error && err.message === 'UNAUTHORIZED_ADMIN') {
+      return errorResponse('Admin access required. Please sign in with an active admin account.', 'FORBIDDEN', 403);
+    }
     console.error('Admin users error:', err);
     return errorResponse('Unable to load users', 'USERS_LOAD_FAILED', 500);
   }
@@ -92,6 +95,9 @@ export async function POST(req: NextRequest) {
 
     return successResponse({ id: account.id, email, role }, 201);
   } catch (err) {
+    if (err instanceof Error && err.message === 'UNAUTHORIZED_ADMIN') {
+      return errorResponse('Admin access required. Please sign in with an active admin account.', 'FORBIDDEN', 403);
+    }
     console.error('Admin user create error:', err);
     const message = err instanceof Error ? err.message : String(err);
     return errorResponse(`Unable to create user: ${message}`, 'USER_CREATE_FAILED', 500);
@@ -152,6 +158,9 @@ export async function PATCH(req: NextRequest) {
     }
     return successResponse({ saved: true });
   } catch (err) {
+    if (err instanceof Error && err.message === 'UNAUTHORIZED_ADMIN') {
+      return errorResponse('Admin access required. Please sign in with an active admin account.', 'FORBIDDEN', 403);
+    }
     console.error('Admin user update error:', err);
     const message = err instanceof Error ? err.message : String(err);
     return errorResponse(`Unable to update user: ${message}`, 'USER_UPDATE_FAILED', 500);
