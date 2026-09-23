@@ -83,6 +83,30 @@ function normalizeBookingDetail(raw: any): BookingDetail {
     ? raw.fulfillment_tasks[0]
     : raw.fulfillment_tasks || raw.fulfillment;
 
+  const fulfillmentDetails = fulfillment
+    ? {
+        id: fulfillment.id,
+        status: String(fulfillment.status || '').toUpperCase(),
+        assignedTo: fulfillment.assigned_to ?? fulfillment.assignedTo,
+        supplierName: fulfillment.supplier_name ?? fulfillment.supplierName,
+        supplierReference: fulfillment.supplier_reference ?? fulfillment.supplierReference,
+        pnr: fulfillment.pnr,
+        ticketNumber: fulfillment.ticket_number ?? fulfillment.ticketNumber,
+        hotelConfirmationNumber:
+          fulfillment.hotel_confirmation_number ?? fulfillment.hotelConfirmationNumber,
+        notes: (fulfillment.notes || []).map((n: any) => ({
+          id: n.id,
+          author: n.author ?? n.author_name ?? n.author_id ?? 'Agency',
+          text: n.text ?? n.note ?? '',
+          createdAt: n.created_at ?? n.createdAt,
+        })),
+        createdAt: fulfillment.created_at ?? fulfillment.createdAt,
+        updatedAt: fulfillment.updated_at ?? fulfillment.updatedAt,
+        startedAt: fulfillment.started_at ?? fulfillment.startedAt,
+        completedAt: fulfillment.completed_at ?? fulfillment.completedAt,
+      }
+    : undefined;
+
   return {
     id: raw.id,
     reference: raw.reference,
@@ -105,29 +129,7 @@ function normalizeBookingDetail(raw: any): BookingDetail {
         : undefined,
     flightDetails: raw.flightDetails ?? raw.flight_details,
     hotelDetails: raw.hotelDetails ?? raw.hotel_details,
-    fulfillment: fulfillment
-      ? {
-          id: fulfillment.id,
-          status: String(fulfillment.status || '').toUpperCase(),
-          assignedTo: fulfillment.assigned_to ?? fulfillment.assignedTo,
-          supplierName: fulfillment.supplier_name ?? fulfillment.supplierName,
-          supplierReference: fulfillment.supplier_reference ?? fulfillment.supplierReference,
-          pnr: fulfillment.pnr,
-          ticketNumber: fulfillment.ticket_number ?? fulfillment.ticketNumber,
-          hotelConfirmationNumber:
-            fulfillment.hotel_confirmation_number ?? fulfillment.hotelConfirmationNumber,
-          notes: (fulfillment.notes || []).map((n: any) => ({
-            id: n.id,
-            author: n.author ?? n.author_name ?? n.author_id ?? 'Agency',
-            text: n.text ?? n.note ?? '',
-            createdAt: n.created_at ?? n.createdAt,
-          })),
-          createdAt: fulfillment.created_at ?? fulfillment.createdAt,
-          updatedAt: fulfillment.updated_at ?? fulfillment.updatedAt,
-          startedAt: fulfillment.started_at ?? fulfillment.startedAt,
-          completedAt: fulfillment.completed_at ?? fulfillment.completedAt,
-        }
-      : undefined,
+    fulfillment: fulfillmentDetails,
     documents: (raw.documents || []).map((doc: any) => ({
       id: doc.id,
       type: doc.type ?? doc.document_type ?? 'DOCUMENT',
