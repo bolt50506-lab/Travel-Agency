@@ -17,6 +17,14 @@ export default function Home() {
   return (
     <div className="flex flex-col">
       <section className="relative isolate overflow-hidden bg-slate-950">
+        <div
+          className="absolute inset-0 bg-cover bg-center"
+          style={{
+            backgroundImage:
+              'url(https://images.pexels.com/photos/33976726/pexels-photo-33976726.jpeg?auto=compress&cs=tinysrgb&w=1920)',
+          }}
+        />
+        <div className="absolute inset-0 bg-gradient-to-b from-slate-950/75 via-slate-950/60 to-slate-950/90" />
         <div className="absolute -left-24 top-10 h-72 w-72 rounded-full bg-cyan-400/20 blur-3xl animate-float-slow" />
         <div className="absolute right-0 top-0 h-96 w-96 rounded-full bg-blue-500/20 blur-3xl animate-drift" />
         <div className="absolute bottom-0 left-1/3 h-64 w-64 rounded-full bg-violet-500/15 blur-3xl animate-float-slow" />
