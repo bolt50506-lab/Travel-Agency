@@ -92,6 +92,15 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       status: 'pending',
     });
 
+    await supabaseAdmin.from('supplier_payables').insert({
+      booking_id: booking.id,
+      supplier_name: 'Unassigned supplier',
+      payable_amount: supplierCost,
+      paid_amount: 0,
+      currency: 'PKR',
+      status: 'OPEN',
+    });
+
     if (Number(agent.commission_rate || 0) > 0) {
       const commissionRate = Number(agent.commission_rate);
       const margin = Math.max(0, total - supplierCost - taxes + discount);
