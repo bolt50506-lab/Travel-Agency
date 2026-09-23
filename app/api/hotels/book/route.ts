@@ -1,10 +1,13 @@
 import { NextRequest } from 'next/server';
+import { getServerActor } from '@/lib/auth/server';
 import { hotelService } from '@/lib/services';
 import { hotelBookSchema } from '@/lib/validation/schemas';
 import { successResponse, errorResponse, validateBody } from '@/lib/utils/api';
 
 export async function POST(req: NextRequest) {
   try {
+    const actor = await getServerActor();
+    if (!actor) return errorResponse('Login required', 'AUTH_REQUIRED', 401);
     const body = await req.json();
     const validation = validateBody(hotelBookSchema, body);
 
