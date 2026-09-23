@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server';
 import { flightService } from '@/lib/services';
 import { flightRevalidateSchema } from '@/lib/validation/schemas';
 import { successResponse, errorResponse, validateBody } from '@/lib/utils/api';
+import { calculateAgencyPrice } from '@/lib/services/pricing-service';
 
 export async function POST(req: NextRequest) {
   try {
@@ -13,6 +14,10 @@ export async function POST(req: NextRequest) {
     }
 
     const result = await flightService.revalidateOffer(validation.data);
+    if (result.priceChanged && result.newPrice) {
+      const pricing = await calculateAgencyPrice({ supplierCost: Number(result.offer?.basePrice?.amount || result.newPrice.amount), taxes: Number(result.offer?.taxesAndFees?.amount || 0), requestedCustomerPrice: Number(result.newPrice.amount), context: { product: 'flight' } });
+      return successResponse({ ...result, newPrice: { amount: pricing.customerPrice, currency: 'PKR' }, pricingToken: (await import('@/lib/services/pricing-service')).sealRevalidationToken(pricing) });
+    }
     return successResponse(result);
   } catch (err) {
     console.error('Flight revalidate error:', err);
