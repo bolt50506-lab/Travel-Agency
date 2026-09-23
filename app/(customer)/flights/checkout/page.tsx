@@ -133,7 +133,7 @@ export default function FlightCheckoutPage() {
       setRevalidation(data);
 
       if (data.priceChanged && data.newPrice && offer) {
-        setOffer({ ...offer, totalPrice: { amount: data.newPrice.amount, currency: data.newPrice.currency } });
+        setOffer({ ...offer, totalPrice: { amount: data.newPrice.amount, currency: data.newPrice.currency }, pricingToken: data.pricingToken });
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Revalidation failed');
