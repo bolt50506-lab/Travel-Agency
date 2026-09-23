@@ -65,7 +65,7 @@ export default function LoginPage() {
           </Link>
         </div>
 
-        <Card className="p-6">
+          <Card className="p-6">
           <h1 className="text-xl font-bold mb-1">Log in to your account</h1>
           <p className="text-sm text-muted-foreground mb-6">Enter your credentials to access your bookings.</p>
 
@@ -128,7 +128,8 @@ export default function LoginPage() {
             </Link>
           </p>
 
-     </Card>
+          </Card>
+        </div>
       </div>
     </div>
   );
