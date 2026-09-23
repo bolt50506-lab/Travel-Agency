@@ -3,30 +3,10 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
-  LayoutDashboard,
-  BookOpen,
-  Plane,
-  BedDouble,
-  Users,
-  UserCog,
-  CreditCard,
-  RefreshCw,
-  Settings,
-  BarChart3,
-  Bell,
-  Percent,
-  DollarSign,
-  ScrollText,
-  Building2,
-  ClipboardList,
-  FileText,
-  PlaneTakeoff,
-  BriefcaseBusiness,
-  HeartPulse,
-  Repeat2,
-  WalletCards,
-  Network,
-  UserRoundSearch,
+  LayoutDashboard, BookOpen, Plane, BedDouble, Users, UserCog, CreditCard,
+  RefreshCw, Settings, BarChart3, Bell, Percent, DollarSign, ScrollText,
+  Building2, ClipboardList, FileText, PlaneTakeoff, BriefcaseBusiness,
+  HeartPulse, Repeat2, WalletCards, Network, UserRoundSearch, ChevronRight,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -44,7 +24,7 @@ const sidebarLinks = [
   { href: '/admin/visa', label: 'Visa Services', icon: FileText },
   { href: '/admin/umrah', label: 'Umrah', icon: PlaneTakeoff },
   { href: '/admin/insurance', label: 'Travel Insurance', icon: HeartPulse },
-  { href: '/admin/reissues', label: 'Reissues', icon: Repeat2 },
+  { href: '/admin/reissues', label: 'Reissues & Changes', icon: Repeat2 },
   { href: '/admin/agents', label: 'Agents', icon: UserCog },
   { href: '/admin/payments', label: 'Payments', icon: CreditCard },
   { href: '/admin/refunds', label: 'Refunds', icon: RefreshCw },
@@ -64,42 +44,57 @@ export function AdminSidebar() {
   const pathname = usePathname();
 
   return (
-    <aside className="fixed left-0 top-0 z-40 h-screen w-60 border-r border-border bg-card overflow-y-auto">
-      <div className="flex h-16 items-center gap-2 border-b border-border px-4">
-        <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary">
-          <span className="text-sm font-bold text-primary-foreground">V</span>
+    <aside className="fixed inset-y-0 left-0 z-40 hidden w-64 border-r border-border/70 bg-card/95 backdrop-blur md:flex md:flex-col">
+      <div className="flex h-16 shrink-0 items-center gap-3 border-b border-border/70 px-5">
+        <div className="relative flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm">
+          <span className="text-sm font-black">V</span>
+          <span className="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full bg-emerald-400 ring-2 ring-card" />
         </div>
-        <span className="text-lg font-bold tracking-tight">Pakistan Travel Agency</span>
-        <span className="text-xs text-muted-foreground ml-auto">Admin</span>
+        <div className="min-w-0">
+          <p className="truncate text-sm font-bold tracking-tight">Voyago</p>
+          <p className="text-[11px] text-muted-foreground">Travel operations</p>
+        </div>
       </div>
 
-      <nav className="p-3 space-y-0.5">
-        {sidebarLinks.map((link) => {
-          const Icon = link.icon;
-          const active = pathname === link.href || (link.href !== '/admin' && pathname?.startsWith(link.href));
-          return (
-            <Link
-              key={link.href}
-              href={link.href}
-              className={cn(
-                'flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors',
-                active
-                  ? 'bg-primary text-primary-foreground font-medium'
-                  : 'text-muted-foreground hover:text-foreground hover:bg-muted'
-              )}
-            >
-              <Icon className="h-4 w-4 shrink-0" />
-              {link.label}
-            </Link>
-          );
-        })}
+      <div className="border-b border-border/70 px-4 py-3">
+        <div className="rounded-xl bg-gradient-to-r from-primary/10 via-primary/5 to-transparent px-3 py-2">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-primary">Workspace</p>
+          <p className="mt-0.5 text-xs text-muted-foreground">Agency control center</p>
+        </div>
+      </div>
+
+      <nav className="min-h-0 flex-1 overflow-y-auto p-3">
+        <div className="space-y-0.5">
+          {sidebarLinks.map((link) => {
+            const Icon = link.icon;
+            const active = pathname === link.href || (link.href !== '/admin' && pathname?.startsWith(link.href));
+            return (
+              <Link
+                key={link.href}
+                href={link.href}
+                className={cn(
+                  'group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition-all duration-200',
+                  active
+                    ? 'bg-primary text-primary-foreground shadow-sm'
+                    : 'text-muted-foreground hover:bg-muted/70 hover:text-foreground'
+                )}
+              >
+                <Icon className={cn('h-4 w-4 shrink-0 transition-transform duration-200 group-hover:scale-105', active && 'text-primary-foreground')} />
+                <span className="min-w-0 flex-1 truncate">{link.label}</span>
+                {active && <ChevronRight className="h-3.5 w-3.5 opacity-70" />}
+              </Link>
+            );
+          })}
+        </div>
       </nav>
 
-      <div className="border-t border-border p-3">
-        <Link href="/" className="flex items-center gap-2 rounded-md px-3 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-muted">
-          ← Back to Site
+      <div className="shrink-0 border-t border-border/70 p-3">
+        <Link href="/" className="flex items-center gap-2 rounded-xl px-3 py-2 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground">
+          ← View customer site
         </Link>
-        <Link href="/api/auth/logout" className="mt-1 flex items-center gap-2 rounded-md px-3 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-muted">Sign out</Link>
+        <Link href="/api/auth/logout" className="mt-1 flex items-center gap-2 rounded-xl px-3 py-2 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground">
+          Sign out
+        </Link>
       </div>
     </aside>
   );
