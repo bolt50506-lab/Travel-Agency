@@ -115,7 +115,7 @@ export default function HotelCheckoutPage() {
       if (!res.ok) throw new Error(data.error || 'Revalidation failed');
       setRevalidation(data);
       if (data.priceChanged && data.newPrice && selectedRoom) {
-        setSelectedRoom({ ...selectedRoom, totalPrice: { amount: data.newPrice.amount, currency: data.newPrice.currency } });
+        setSelectedRoom({ ...selectedRoom, totalPrice: { amount: data.newPrice.amount, currency: data.newPrice.currency }, pricingToken: data.pricingToken });
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Revalidation failed');
