@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 const navLinks = [
   { href: '/flights', label: 'Flights', icon: Plane },
   { href: '/hotels', label: 'Hotels', icon: Hotel },
+  { href: '/umrah', label: 'Umrah', icon: Sparkles },
   { href: '/bookings', label: 'My bookings', icon: Bookmark },
   { href: '/help', label: 'Help', icon: HelpCircle },
 ];
