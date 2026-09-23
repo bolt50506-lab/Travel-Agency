@@ -44,8 +44,18 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="container-page py-12">
-      <div className="mx-auto max-w-md">
+    <div
+      className="relative min-h-[calc(100vh-4rem)] overflow-hidden py-12 md:py-16"
+      style={{
+        backgroundImage:
+          'url(https://images.pexels.com/photos/33976726/pexels-photo-33976726.jpeg?auto=compress&cs=tinysrgb&w=1920)',
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+      }}
+    >
+      <div className="absolute inset-0 bg-slate-950/70 backdrop-blur-[2px]" />
+      <div className="relative container-page">
+        <div className="mx-auto max-w-md">
         <div className="mb-6 text-center">
           <Link href="/" className="inline-flex items-center gap-2">
             <div className="flex h-10 w-10 items-center justify-center rounded-md bg-primary">
