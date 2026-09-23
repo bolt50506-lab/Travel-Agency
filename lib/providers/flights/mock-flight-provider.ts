@@ -189,8 +189,8 @@ export class MockFlightProvider implements IFlightProvider {
         id: `offer-${offerSeed}`,
         segments,
         totalPrice: { amount: price.total, currency: 'PKR' },
-        basePrice: { amount: price.base, currency: 'USD' },
-        taxesAndFees: { amount: price.taxes, currency: 'USD' },
+        basePrice: { amount: price.base, currency: 'PKR' },
+        taxesAndFees: { amount: price.taxes, currency: 'PKR' },
         stops,
         totalDuration,
         refundable: seededRandom(offerSeed + 20) > 0.5,
@@ -228,8 +228,8 @@ export class MockFlightProvider implements IFlightProvider {
       return {
         valid: true,
         priceChanged: true,
-        oldPrice: { amount: oldPrice, currency: 'USD' },
-        newPrice: { amount: newPrice, currency: 'USD' },
+        oldPrice: { amount: oldPrice, currency: 'PKR' },
+        newPrice: { amount: newPrice, currency: 'PKR' },
         seatsAvailable: true,
       };
     }
@@ -255,9 +255,9 @@ export class MockFlightProvider implements IFlightProvider {
         offer: {
           id: request.offerId,
           segments: [],
-          totalPrice: { amount: 0, currency: 'USD' },
-          basePrice: { amount: 0, currency: 'USD' },
-          taxesAndFees: { amount: 0, currency: 'USD' },
+          totalPrice: { amount: 0, currency: 'PKR' },
+          basePrice: { amount: 0, currency: 'PKR' },
+          taxesAndFees: { amount: 0, currency: 'PKR' },
           stops: 0,
           totalDuration: 0,
           refundable: false,
@@ -277,9 +277,9 @@ export class MockFlightProvider implements IFlightProvider {
       offer: {
         id: request.offerId,
         segments: [],
-        totalPrice: { amount: 0, currency: 'USD' },
-        basePrice: { amount: 0, currency: 'USD' },
-        taxesAndFees: { amount: 0, currency: 'USD' },
+        totalPrice: { amount: 0, currency: 'PKR' },
+        basePrice: { amount: 0, currency: 'PKR' },
+        taxesAndFees: { amount: 0, currency: 'PKR' },
         stops: 0,
         totalDuration: 0,
         refundable: true,
