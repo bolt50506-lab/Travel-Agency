@@ -3,7 +3,7 @@ export type PortalModule = {
   label: string;
   description: string;
   route: string;
-  domain: 'travel'|'crm'|'finance'|'operations'|'admin';
+  domain: 'travel'|'crm'|'finance'|'operations'|'sales'|'admin';
   roles: Array<'customer'|'agent'|'admin'>;
   readOnly?: boolean;
 };
