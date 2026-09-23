@@ -23,6 +23,9 @@ export async function GET() {
     ];
     return successResponse({ roles: [...builtins, ...existing.filter((r: any) => !['admin','agent','customer'].includes(r.name))] });
   } catch (err) {
+    if (err instanceof Error && err.message === 'UNAUTHORIZED_ADMIN') {
+      return errorResponse('Admin access required. Please sign in with an active admin account.', 'FORBIDDEN', 403);
+    }
     console.error(err);
     return errorResponse('Unable to load roles', 'ROLES_LOAD_FAILED', 500);
   }
@@ -45,6 +48,9 @@ export async function POST(req: NextRequest) {
     if (error) throw error;
     return successResponse(data, 201);
   } catch (err) {
+    if (err instanceof Error && err.message === 'UNAUTHORIZED_ADMIN') {
+      return errorResponse('Admin access required. Please sign in with an active admin account.', 'FORBIDDEN', 403);
+    }
     console.error(err);
     return errorResponse('Unable to create role', 'ROLE_CREATE_FAILED', 500);
   }
@@ -65,6 +71,9 @@ export async function PATCH(req: NextRequest) {
     if (error) throw error;
     return successResponse(data);
   } catch (err) {
+    if (err instanceof Error && err.message === 'UNAUTHORIZED_ADMIN') {
+      return errorResponse('Admin access required. Please sign in with an active admin account.', 'FORBIDDEN', 403);
+    }
     console.error(err);
     return errorResponse('Unable to update role', 'ROLE_UPDATE_FAILED', 500);
   }
