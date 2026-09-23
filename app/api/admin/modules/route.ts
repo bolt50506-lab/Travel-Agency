@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server';
 import { successResponse, errorResponse } from '@/lib/utils/api';
 import { supabaseAdmin } from '@/lib/supabase/server';
-import { requireStaff } from '@/lib/auth/server';
+import { requireAdmin } from '@/lib/auth/server';
 
 const configs: Record<string, { table: string; fields: string[]; search: string[] }> = {
   bookings: { table: 'bookings', fields: ['reference','type','status','contact_email','contact_phone','customer_price','currency','supplier_name','supplier_reference','notes'], search: ['reference','contact_email','contact_phone','status','type'] },
@@ -30,7 +30,7 @@ function sanitize(body: Record<string, unknown>, fields: string[]) {
 
 export async function GET(req: NextRequest) {
   try {
-    await requireStaff();
+    await requireAdmin();
     const params = new URL(req.url).searchParams;
     const moduleName = params.get('module') || '';
     const cfg = configs[moduleName];
@@ -52,7 +52,7 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const actor = await requireStaff();
+    const actor = await requireAdmin();
     const body = await req.json();
     const cfg = configs[body.module];
     if (!cfg) return errorResponse('Unknown module', 'MODULE_NOT_FOUND', 404);
@@ -70,7 +70,7 @@ export async function POST(req: NextRequest) {
 
 export async function PATCH(req: NextRequest) {
   try {
-    const actor = await requireStaff();
+    const actor = await requireAdmin();
     const body = await req.json();
     const cfg = configs[body.module];
     if (!cfg || !body.id) return errorResponse('Module and record ID are required', 'VALIDATION_ERROR', 400);
