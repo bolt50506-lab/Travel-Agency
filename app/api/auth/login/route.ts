@@ -60,9 +60,15 @@ export async function POST(req: NextRequest) {
       role: profile.role,
     });
 
+    // Match the cookie's Secure flag to the actual request protocol.
+    // This keeps local production testing on http://localhost working while
+    // still using Secure cookies behind HTTPS/Cloudflare in real deployments.
+    const forwardedProto = req.headers.get('x-forwarded-proto')?.split(',')[0]?.trim().toLowerCase();
+    const isSecureRequest = forwardedProto === 'https' || req.nextUrl.protocol === 'https:';
+
     cookies().set('voyago_access_token', token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
+      secure: isSecureRequest,
       sameSite: 'lax',
       path: '/',
       maxAge: 7 * 24 * 60 * 60,
