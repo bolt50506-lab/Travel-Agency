@@ -126,7 +126,7 @@ function normalizeBookingDetail(raw: any): BookingDetail {
           updatedAt: fulfillment.updated_at ?? fulfillment.updatedAt,
           startedAt: fulfillment.started_at ?? fulfillment.startedAt,
           completedAt: fulfillment.completed_at ?? fulfillment.completedAt,
-        },
+        }
       : undefined,
     documents: (raw.documents || []).map((doc: any) => ({
       id: doc.id,
