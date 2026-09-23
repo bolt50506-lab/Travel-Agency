@@ -54,8 +54,8 @@ export async function POST(req: NextRequest) {
     }
 
     const authClient = (await import('@supabase/supabase-js')).createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.invalid',
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'build-placeholder-key',
       { auth: { autoRefreshToken: false, persistSession: false, detectSessionInUrl: false } }
     );
     const signedIn = await authClient.auth.signInWithPassword({ email, password });
