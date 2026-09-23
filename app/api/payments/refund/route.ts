@@ -8,7 +8,7 @@ const schema=z.object({paymentId:z.string().uuid(),amount:z.number().positive().
 
 export async function POST(req:NextRequest){
  try{
-  const actor=await requireStaff();const validation=validateBody(schema,await req.json());if(!validation.success)return errorResponse(validation.error,'VALIDATION_ERROR',400);
+  const actor=await requireAdmin();const validation=validateBody(schema,await req.json());if(!validation.success)return errorResponse(validation.error,'VALIDATION_ERROR',400);
   const input=validation.data;
   const {data:payment,error}=await supabaseAdmin.from('payments').select('*').eq('id',input.paymentId).single();if(error||!payment)return errorResponse('Payment not found','NOT_FOUND',404);
   if(payment.status!=='verified'&&payment.status!=='partially_refunded')return errorResponse('Only verified payments can be refunded','PAYMENT_NOT_REFUNDABLE',409);
