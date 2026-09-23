@@ -108,6 +108,11 @@ export async function GET(_req: NextRequest) {
       const { data: customer } = await supabaseAdmin.from('customers').select('id').eq('user_id', actor.id).maybeSingle();
       if (!customer) return successResponse({ bookings: [], total: 0 });
       query = query.eq('customer_id', customer.id);
+    } else if (actor.role === 'agent') {
+      const agent = await requireAgentRecord(actor.id);
+      query = query.eq('agent_id', agent.id);
+    } else if (actor.role !== 'admin') {
+      return errorResponse('Forbidden', 'FORBIDDEN', 403);
     }
 
     const { data, error } = await query;
@@ -130,14 +135,15 @@ export async function POST(req: NextRequest) {
     }
 
     const actor = await getServerActor();
+    if (!actor) return errorResponse('Login required', 'AUTH_REQUIRED', 401);
     const details = body.flightDetails || body.hotelDetails || {};
     const passengerOrGuest = details.passengers?.[0] || details.guests?.[0];
     const customerName = passengerOrGuest
       ? [passengerOrGuest.firstName, passengerOrGuest.lastName].filter(Boolean).join(' ')
       : body.contactEmail.split('@')[0];
 
-    const agent = actor?.role === 'agent' ? await requireAgentRecord(actor.id) : null;
-    const customer = await findCustomer(actor?.id || null, body.contactEmail, body.contactPhone, customerName, !!agent);
+    const agent = actor.role === 'agent' ? await requireAgentRecord(actor.id) : null;
+    const customer = await findCustomer(actor.id, body.contactEmail, body.contactPhone, customerName, !!agent);
     const amount = Number(body.totalAmount.amount);
     const currency = body.totalAmount.currency || 'PKR';
     const reference = makeReference();
