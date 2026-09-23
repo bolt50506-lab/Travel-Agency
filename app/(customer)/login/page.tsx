@@ -35,7 +35,7 @@ export default function LoginPage() {
       }
 
       toast.success('Welcome back! You are now logged in.');
-      router.push('/');
+      router.push(data.user?.profile?.role === 'admin' || data.user?.profile?.role === 'agent' ? '/admin' : '/');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong');
     } finally {
@@ -118,13 +118,7 @@ export default function LoginPage() {
             </Link>
           </p>
 
-          <div className="mt-6 rounded-lg bg-muted/50 p-3">
-            <p className="text-xs text-muted-foreground mb-2">Demo accounts:</p>
-            <p className="text-xs text-muted-foreground">Customer: john.smith@example.com / password123</p>
-            <p className="text-xs text-muted-foreground">Agent: agent@travelportal.com / agent123</p>
-            <p className="text-xs text-muted-foreground">Admin: admin@travelportal.com / admin123</p>
-          </div>
-        </Card>
+     </Card>
       </div>
     </div>
   );
