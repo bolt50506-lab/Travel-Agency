@@ -2049,3 +2049,10 @@ ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO service_role
 ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON FUNCTIONS TO service_role;
 GRANT SELECT ON packages, umrah_packages, insurance_products TO anon;
 NOTIFY pgrst, 'reload schema';
+
+
+-- ===== 20260923130000_quotation_commercial_hardening.sql =====
+ALTER TABLE quotations
+  ADD COLUMN IF NOT EXISTS supplier_cost numeric(12,2) NOT NULL DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS agency_margin numeric(12,2) NOT NULL DEFAULT 0;
+CREATE INDEX IF NOT EXISTS idx_quotations_agent_status ON quotations(agent_id, status);
