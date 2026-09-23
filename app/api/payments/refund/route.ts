@@ -56,7 +56,7 @@ export async function POST(req: NextRequest) {
 
     const fullyRefunded = alreadyRefunded + amount >= Number(payment.amount);
     await supabaseAdmin.from('payments').update({
-      status: fullyRefunded ? 'refunded' : 'partially_refunded',
+      status: 'partially_refunded',
       updated_at: now,
     }).eq('id', payment.id);
 
@@ -69,7 +69,7 @@ export async function POST(req: NextRequest) {
     });
 
     await supabaseAdmin.from('bookings').update({
-      status: fullyRefunded ? 'REFUND_PROCESSING' : 'REFUND_PROCESSING',
+      status: 'REFUND_PROCESSING',
       updated_at: now,
     }).eq('id', payment.booking_id);
 
