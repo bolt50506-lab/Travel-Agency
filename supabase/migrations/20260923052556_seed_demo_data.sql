@@ -40,7 +40,7 @@ VALUES (
   'PK',
   'Islamabad',
   'Islamabad, Pakistan',
-  '+92-51-000-0000',
+  '',
   '',
   'https://b2b.destinotravels.com',
   'DT001',
