@@ -294,10 +294,14 @@ export async function POST(req: NextRequest) {
     })).error;
     if (taskError) console.error('Fulfillment task warning:', taskError);
 
-    if (agent && Number(agent.commission_rate || 0) > 0) {
-      const commissionRate = Number(agent.commission_rate);
-      const commissionAmount = Math.round(pricing.agencyMargin * commissionRate) / 100;
-      await supabaseAdmin.from('agent_commissions').insert({
+    if (agent) {
+      const commissionRate = Number(agent.commission_rate || 0);
+      if (!Number.isFinite(commissionRate) || commissionRate < 0 || commissionRate > 100) {
+        return errorResponse('Agent commission percentage must be between 0% and 100%', 'INVALID_COMMISSION_RATE', 409);
+      }
+
+      const commissionAmount = Math.round((pricing.agencyMargin * commissionRate) * 100) / 100;
+      const { error: commissionError } = await supabaseAdmin.from('agent_commissions').insert({
         booking_id: booking.id,
         agent_id: agent.id,
         basis_amount: pricing.agencyMargin,
@@ -307,6 +311,8 @@ export async function POST(req: NextRequest) {
         currency: 'PKR',
         status: 'PENDING',
       });
+
+      if (commissionError) console.error('Commission warning:', commissionError);
     }
 
     await supabaseAdmin.from('supplier_payables').insert({
