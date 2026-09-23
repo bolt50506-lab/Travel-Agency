@@ -6,6 +6,7 @@ import { useState } from 'react';
 import { Menu, X, Plane, Hotel, Bookmark, HelpCircle, LogIn, UserPlus, Globe2, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
+import { BrandLogo } from '@/components/brand/logo';
 
 const navLinks = [
   { href: '/flights', label: 'Flights', icon: Plane },
@@ -25,16 +26,7 @@ export function Header() {
     <header className="sticky top-0 z-50 w-full border-b border-border/70 bg-background/80 backdrop-blur-xl">
       <div className="container-page flex h-[4.5rem] items-center justify-between">
         <div className="flex items-center gap-8">
-          <Link href="/" className="group flex items-center gap-2.5">
-            <div className="relative flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm transition-transform duration-300 group-hover:-rotate-3 group-hover:scale-105">
-              <Globe2 className="h-5 w-5" />
-              <Sparkles className="absolute -right-1 -top-1 h-3.5 w-3.5 text-cyan-300" />
-            </div>
-            <div>
-              <span className="block text-lg font-black tracking-tight">Destino Travels</span>
-              <span className="hidden text-[10px] font-medium uppercase tracking-[0.16em] text-muted-foreground sm:block">Travel smarter</span>
-            </div>
-          </Link>
+          <BrandLogo />
 
           <nav className="hidden items-center gap-1 md:flex">
             {navLinks.map((link) => {
