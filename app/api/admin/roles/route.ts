@@ -7,8 +7,21 @@ export async function GET() {
   try {
     await requireAdmin();
     const { data, error } = await supabaseAdmin.from('admin_roles').select('*').order('name');
-    if (error) throw error;
-    return successResponse({ roles: data || [] });
+    if (error) {
+      console.error('Admin roles table unavailable:', error);
+      return successResponse({ roles: [
+        { id: 'builtin-admin', name: 'admin', description: 'Full system administrator', is_active: true },
+        { id: 'builtin-agent', name: 'agent', description: 'Travel agent', is_active: true },
+        { id: 'builtin-customer', name: 'customer', description: 'Customer', is_active: true },
+      ] });
+    }
+    const existing = data || [];
+    const builtins = [
+      { id: 'builtin-admin', name: 'admin', description: 'Full system administrator', is_active: true },
+      { id: 'builtin-agent', name: 'agent', description: 'Travel agent', is_active: true },
+      { id: 'builtin-customer', name: 'customer', description: 'Customer', is_active: true },
+    ];
+    return successResponse({ roles: [...builtins, ...existing.filter((r: any) => !['admin','agent','customer'].includes(r.name))] });
   } catch (err) {
     console.error(err);
     return errorResponse('Unable to load roles', 'ROLES_LOAD_FAILED', 500);
