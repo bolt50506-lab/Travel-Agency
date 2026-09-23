@@ -70,6 +70,7 @@ export async function calculateAgencyPrice(input: {
 
   const rules = input.rules || await getActivePricingRules();
   const applicable = rules.filter((rule: any) => matches(rule, input.context));
+  if (!applicable.length) applicable.push({ id: 'built-in-default-12', rule_type: 'percentage_markup', scope: 'global', value: 12, priority: -1 });
   const percentage = applicable
     .filter((r: any) => r.rule_type === 'percentage_markup')
     .sort((a: any, b: any) => Number(b.priority) - Number(a.priority))[0];
