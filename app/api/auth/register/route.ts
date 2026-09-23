@@ -1,32 +1,50 @@
+import crypto from 'crypto';
 import { NextRequest } from 'next/server';
 import { cookies } from 'next/headers';
 import { registerSchema } from '@/lib/validation/schemas';
 import { successResponse, errorResponse, validateBody } from '@/lib/utils/api';
 import { supabaseAdmin } from '@/lib/supabase/server';
+import { createSessionToken } from '@/lib/auth/server';
+
+function hashPassword(password: string) {
+  const salt = crypto.randomBytes(16).toString('base64url');
+  const N = 16384;
+  const r = 8;
+  const p = 1;
+  const hash = crypto.scryptSync(password, salt, 64, { N, r, p }).toString('base64url');
+  return `scrypt$${N}$${r}$${p}$${salt}$${hash}`;
+}
 
 export async function POST(req: NextRequest) {
   try {
     const validation = validateBody(registerSchema, await req.json());
     if (!validation.success) return errorResponse(validation.error, 'VALIDATION_ERROR', 400);
 
-    const { email, password, firstName, lastName, phone } = validation.data;
-    const { data, error } = await supabaseAdmin.auth.admin.createUser({
-      email,
-      password,
-      email_confirm: true,
-      user_metadata: { first_name: firstName, last_name: lastName, phone },
-    });
+    const { email: rawEmail, password, firstName, lastName, phone } = validation.data;
+    const email = rawEmail.trim().toLowerCase();
+    const fullName = [firstName, lastName].filter(Boolean).join(' ');
 
-    if (error || !data.user) {
-      const message = /already|exists|duplicate/i.test(error?.message || '')
-        ? 'An account with this email already exists'
-        : (error?.message || 'Unable to create account');
-      return errorResponse(message, /already|exists|duplicate/i.test(error?.message || '') ? 'AUTH_EMAIL_EXISTS' : 'AUTH_CREATE_FAILED', 409);
+    const { data: existing } = await supabaseAdmin
+      .from('local_users')
+      .select('id')
+      .eq('email', email)
+      .maybeSingle();
+
+    if (existing) return errorResponse('An account with this email already exists', 'AUTH_EMAIL_EXISTS', 409);
+
+    const { data: account, error: accountError } = await supabaseAdmin
+      .from('local_users')
+      .insert({ email, password_hash: hashPassword(password) })
+      .select('*')
+      .single();
+
+    if (accountError || !account) {
+      console.error(accountError);
+      return errorResponse('Unable to create account', 'AUTH_CREATE_FAILED', 409);
     }
 
-    const fullName = [firstName, lastName].filter(Boolean).join(' ');
     const { error: profileError } = await supabaseAdmin.from('profiles').insert({
-      id: data.user.id,
+      id: account.id,
       email,
       full_name: fullName,
       phone: phone || null,
@@ -35,12 +53,12 @@ export async function POST(req: NextRequest) {
     });
 
     if (profileError) {
-      await supabaseAdmin.auth.admin.deleteUser(data.user.id);
+      await supabaseAdmin.from('local_users').delete().eq('id', account.id);
       throw profileError;
     }
 
     const { error: customerError } = await supabaseAdmin.from('customers').insert({
-      user_id: data.user.id,
+      user_id: account.id,
       full_name: fullName,
       email,
       phone: phone || null,
@@ -49,29 +67,21 @@ export async function POST(req: NextRequest) {
     });
 
     if (customerError) {
-      await supabaseAdmin.auth.admin.deleteUser(data.user.id);
+      await supabaseAdmin.from('profiles').delete().eq('id', account.id);
+      await supabaseAdmin.from('local_users').delete().eq('id', account.id);
       throw customerError;
     }
 
-    const authClient = (await import('@supabase/supabase-js')).createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.invalid',
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'build-placeholder-key',
-      { auth: { autoRefreshToken: false, persistSession: false, detectSessionInUrl: false } }
-    );
-    const signedIn = await authClient.auth.signInWithPassword({ email, password });
-    if (signedIn.error || !signedIn.data.session) {
-      return successResponse({ user: { id: data.user.id, email }, requiresLogin: true }, 201);
-    }
-
-    cookies().set('voyago_access_token', signedIn.data.session.access_token, {
+    const token = createSessionToken({ id: account.id, email, role: 'customer' });
+    cookies().set('voyago_access_token', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
       path: '/',
-      maxAge: Math.max(60, signedIn.data.session.expires_in || 3600),
+      maxAge: 7 * 24 * 60 * 60,
     });
 
-    return successResponse({ user: { id: data.user.id, email, fullName }, requiresLogin: false }, 201);
+    return successResponse({ user: { id: account.id, email, fullName }, requiresLogin: false }, 201);
   } catch (err) {
     console.error('Registration error:', err);
     return errorResponse('Unable to create account', 'INTERNAL_ERROR', 500);

@@ -1,7 +1,1 @@
-# Storage Setup
-
-The migrations create a private Supabase Storage bucket named `travel-documents`.
-
-Allowed agency documents include PDF, JPG and PNG. Keep the bucket private. Customers should receive signed/authorized access only to documents marked customer-visible and belonging to their booking.
-
-Never expose the Supabase service-role key in browser code.
+# Storage Setup\n\nSelf-hosted mode does not use Supabase Storage.\n\nTravel documents should be stored on the Windows server in a private application storage directory and served only through authenticated Next.js routes. PostgreSQL stores document metadata and access/verification state.\n\nAllowed agency documents include PDF, JPG and PNG.\n\nNever expose document directories directly through the public web server.\n
