@@ -9,7 +9,7 @@ const hotels = [
     country: 'United Kingdom',
     rating: 4.8,
     starRating: 5,
-    price: 140,
+    price: 45000,
     image: 'https://images.pexels.com/photos/2259226/pexels-photo-2259226.jpeg?auto=compress&cs=tinysrgb&w=600',
   },
   {
@@ -18,7 +18,7 @@ const hotels = [
     country: 'UAE',
     rating: 4.7,
     starRating: 5,
-    price: 210,
+    price: 36000,
     image: 'https://images.pexels.com/photos/7974839/pexels-photo-7974839.jpeg?auto=compress&cs=tinysrgb&w=600',
   },
   {
@@ -27,7 +27,7 @@ const hotels = [
     country: 'Japan',
     rating: 4.9,
     starRating: 5,
-    price: 320,
+    price: 52000,
     image: 'https://images.pexels.com/photos/2467558/pexels-photo-2467558.jpeg?auto=compress&cs=tinysrgb&w=600',
   },
   {
@@ -36,7 +36,7 @@ const hotels = [
     country: 'Australia',
     rating: 4.8,
     starRating: 5,
-    price: 280,
+    price: 48000,
     image: 'https://images.pexels.com/photos/258154/pexels-photo-258154.jpeg?auto=compress&cs=tinysrgb&w=600',
   },
 ];
@@ -47,7 +47,7 @@ export function FeaturedHotels() {
       <div className="flex items-end justify-between mb-6">
         <div>
           <h2 className="text-2xl font-bold tracking-tight">Featured Hotels</h2>
-          <p className="text-sm text-muted-foreground mt-1">Top-rated properties at the best prices</p>
+          <p className="text-sm text-muted-foreground mt-1">Handpicked stays with starting rates shown in PKR</p>
         </div>
         <Link href="/hotels" className="text-sm font-medium text-primary hover:underline hidden sm:block">
           Browse hotels
@@ -83,7 +83,7 @@ export function FeaturedHotels() {
               </p>
               <div className="flex items-center justify-between mt-2">
                 <span className="text-xs text-muted-foreground">{hotel.rating} rating</span>
-                <span className="text-sm font-bold">${hotel.price}<span className="text-xs font-normal text-muted-foreground">/night</span></span>
+                <span className="text-sm font-bold">PKR {hotel.price.toLocaleString('en-PK')}<span className="text-xs font-normal text-muted-foreground">/night</span></span>
               </div>
             </div>
           </Link>
