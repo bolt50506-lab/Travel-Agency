@@ -14,7 +14,7 @@ export async function GET(req: NextRequest) {
       .from('umrah_packages')
       .select('*')
       .eq('is_active', true)
-      .order('departure_date', { ascending: true, nullsFirst: false })
+      .order('departure_date', { ascending: true })
       .order('price_per_pilgrim', { ascending: true });
 
     if (id) query = query.eq('id', id);
