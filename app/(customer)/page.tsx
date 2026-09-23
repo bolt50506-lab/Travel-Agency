@@ -34,17 +34,17 @@ export default function Home() {
 
         <div className="relative container-page py-14 md:py-20 lg:py-24">
           <div className="max-w-4xl animate-in fade-in slide-in-from-bottom-3 duration-700">
-            <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-amber-300/35 bg-slate-950/45 px-4 py-2 text-sm font-semibold tracking-wide text-amber-200 shadow-lg shadow-black/10 backdrop-blur-md">
-              <Sparkles className="h-4 w-4 text-amber-300" />
+            <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-white/90 bg-white px-4 py-2.5 text-sm font-bold tracking-wide text-slate-900 shadow-xl shadow-black/20">
+              <Sparkles className="h-4 w-4 text-orange-500" />
               <span>Search, compare and book with a real agency workflow</span>
             </div>
             <h1 className="max-w-4xl text-5xl font-black leading-[0.98] tracking-[-0.04em] text-white drop-shadow-2xl sm:text-6xl md:text-7xl lg:text-[5.5rem]">
               Travel made
-              <span className="block bg-gradient-to-r from-amber-200 via-yellow-100 to-white bg-clip-text pb-2 font-serif italic font-bold text-transparent">
+              <span className="block bg-gradient-to-r from-orange-400 via-rose-300 to-white bg-clip-text pb-2 font-serif italic font-bold text-transparent">
                 personal.
               </span>
             </h1>
-            <div className="mt-6 h-px w-24 bg-gradient-to-r from-amber-300 to-transparent" />
+            <div className="mt-6 h-px w-24 bg-gradient-to-r from-orange-500 to-transparent" />
             <p className="mt-5 max-w-2xl text-base font-medium leading-7 text-white/80 md:text-lg">
               Search flights and hotels, compare options, secure your booking, and let our travel team handle the journey from booking to fulfillment.
             </p>
