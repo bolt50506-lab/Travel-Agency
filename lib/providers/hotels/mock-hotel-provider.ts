@@ -75,8 +75,8 @@ function generateRooms(seed: number, nights: number): HotelRoom[] {
         : 'Non-refundable',
       refundable: seededRandom(roomSeed + 50) > 0.4,
       pricePerNight: { amount: pricePerNight, currency: 'PKR' },
-      totalPrice: { amount: total, currency: 'USD' },
-      taxesAndFees: { amount: taxes, currency: 'USD' },
+      totalPrice: { amount: total, currency: 'PKR' },
+      taxesAndFees: { amount: taxes, currency: 'PKR' },
       roomsAvailable: Math.floor(seededRandom(roomSeed + 60) * 10) + 1,
     });
   }
@@ -140,7 +140,7 @@ export class MockHotelProvider implements IHotelProvider {
         checkInTime: '14:00',
         checkOutTime: '12:00',
         rooms,
-        startingPrice: { amount: startingPrice, currency: 'USD' },
+        startingPrice: { amount: startingPrice, currency: 'PKR' },
         provider: this.name,
         validUntil: new Date(Date.now() + 30 * 60000).toISOString(),
       });
@@ -170,8 +170,8 @@ export class MockHotelProvider implements IHotelProvider {
       return {
         valid: true,
         priceChanged: true,
-        oldPrice: { amount: oldPrice, currency: 'USD' },
-        newPrice: { amount: newPrice, currency: 'USD' },
+        oldPrice: { amount: oldPrice, currency: 'PKR' },
+        newPrice: { amount: newPrice, currency: 'PKR' },
         roomsAvailable: true,
       };
     }
@@ -200,9 +200,9 @@ export class MockHotelProvider implements IHotelProvider {
           amenities: [],
           cancellationPolicy: '',
           refundable: false,
-          pricePerNight: { amount: 0, currency: 'USD' },
-          totalPrice: { amount: 0, currency: 'USD' },
-          taxesAndFees: { amount: 0, currency: 'USD' },
+          pricePerNight: { amount: 0, currency: 'PKR' },
+          totalPrice: { amount: 0, currency: 'PKR' },
+          taxesAndFees: { amount: 0, currency: 'PKR' },
           roomsAvailable: 0,
         },
         checkIn: '',
@@ -226,9 +226,9 @@ export class MockHotelProvider implements IHotelProvider {
         amenities: [],
         cancellationPolicy: '',
         refundable: true,
-        pricePerNight: { amount: 0, currency: 'USD' },
-        totalPrice: { amount: 0, currency: 'USD' },
-        taxesAndFees: { amount: 0, currency: 'USD' },
+        pricePerNight: { amount: 0, currency: 'PKR' },
+        totalPrice: { amount: 0, currency: 'PKR' },
+        taxesAndFees: { amount: 0, currency: 'PKR' },
         roomsAvailable: 1,
       },
       checkIn: '',
