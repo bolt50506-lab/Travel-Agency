@@ -1,4 +1,4 @@
-export type Currency = 'USD' | 'EUR' | 'GBP' | 'AED';
+export type Currency = 'PKR';
 
 export interface Money {
   amount: number;
