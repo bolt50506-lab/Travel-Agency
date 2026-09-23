@@ -141,9 +141,11 @@ export async function priceHotelRoom(room: any, hotel: any, rules?: any[]) {
     },
     rules,
   });
+  const supplierTotal = Math.max(1, Number(room.totalPrice?.amount || 0));
+  const ratio = pricing.customerPrice / supplierTotal;
   return {
     ...room,
-    pricePerNight: { ...room.pricePerNight, amount: pricing.customerPrice / Math.max(1, Number(room.totalPrice?.amount || 0) ? Number(room.totalPrice.amount) / Math.max(1, Number(room.pricePerNight?.amount || 1)) : 1) },
+    pricePerNight: { ...room.pricePerNight, amount: round(Number(room.pricePerNight?.amount || 0) * ratio) },
     totalPrice: { amount: pricing.customerPrice, currency: 'PKR' },
     taxesAndFees: { amount: pricing.taxes, currency: 'PKR' },
   };
