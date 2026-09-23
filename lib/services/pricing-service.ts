@@ -1,3 +1,4 @@
+import crypto from 'crypto';
 import { supabaseAdmin } from '@/lib/supabase/server';
 
 export type PricingContext = {
@@ -22,6 +23,39 @@ export type PricingResult = {
 };
 
 const round = (value: number) => Math.round(value * 100) / 100;
+
+function pricingSecret() {
+  const secret = process.env.LOCAL_AUTH_SECRET || process.env.POSTGREST_JWT_SECRET;
+  if (!secret || secret.length < 32) throw new Error('PRICING_SECRET_REQUIRED');
+  return crypto.createHash('sha256').update(secret).digest();
+}
+
+function sealPricingSnapshot(snapshot: { supplierCost: number; taxes: number; customerPrice: number; expiresAt: number }) {
+  const iv = crypto.randomBytes(12);
+  const cipher = crypto.createCipheriv('aes-256-gcm', pricingSecret(), iv);
+  const encrypted = Buffer.concat([cipher.update(JSON.stringify(snapshot), 'utf8'), cipher.final()]);
+  const tag = cipher.getAuthTag();
+  return Buffer.concat([iv, tag, encrypted]).toString('base64url');
+}
+
+export function openPricingSnapshot(token: string) {
+  try {
+    const raw = Buffer.from(token, 'base64url');
+    if (raw.length < 28) return null;
+    const iv = raw.subarray(0, 12);
+    const tag = raw.subarray(12, 28);
+    const encrypted = raw.subarray(28);
+    const decipher = crypto.createDecipheriv('aes-256-gcm', pricingSecret(), iv);
+    decipher.setAuthTag(tag);
+    const snapshot = JSON.parse(Buffer.concat([decipher.update(encrypted), decipher.final()]).toString('utf8')) as {
+      supplierCost: number; taxes: number; customerPrice: number; expiresAt: number;
+    };
+    if (!snapshot.expiresAt || snapshot.expiresAt < Date.now()) return null;
+    return snapshot;
+  } catch {
+    return null;
+  }
+}
 
 export async function getActivePricingRules() {
   const { data, error } = await supabaseAdmin
@@ -123,9 +157,8 @@ export async function priceFlightOffer(offer: any, rules?: any[]) {
   });
   return {
     ...offer,
-    basePrice: { amount: pricing.supplierCost, currency: 'PKR' },
-    taxesAndFees: { amount: pricing.taxes, currency: 'PKR' },
     totalPrice: { amount: pricing.customerPrice, currency: 'PKR' },
+    pricingToken: sealPricingSnapshot({ supplierCost: pricing.supplierCost, taxes: pricing.taxes, customerPrice: pricing.customerPrice, expiresAt: Date.now() + 15 * 60 * 1000 }),
   };
 }
 
@@ -149,5 +182,6 @@ export async function priceHotelRoom(room: any, hotel: any, rules?: any[]) {
     pricePerNight: { ...room.pricePerNight, amount: round(Number(room.pricePerNight?.amount || 0) * ratio) },
     totalPrice: { amount: pricing.customerPrice, currency: 'PKR' },
     taxesAndFees: { amount: pricing.taxes, currency: 'PKR' },
+    pricingToken: sealPricingSnapshot({ supplierCost: pricing.supplierCost, taxes: pricing.taxes, customerPrice: pricing.customerPrice, expiresAt: Date.now() + 15 * 60 * 1000 }),
   };
 }
