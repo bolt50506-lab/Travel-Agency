@@ -1,7 +1,9 @@
 import { successResponse } from '@/lib/utils/api';
+import { requireAdmin } from '@/lib/auth/server';
 
 export async function GET() {
   try {
+    await requireAdmin();
     const providers = [
       {
         id: 'flight-1',
