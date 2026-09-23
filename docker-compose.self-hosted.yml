@@ -7,6 +7,7 @@ services:
       POSTGRES_DB: ${POSTGRES_DB:-voyago}
       POSTGRES_USER: ${POSTGRES_USER:-voyago}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change-this-db-password}
+      POSTGREST_DB_PASSWORD: ${POSTGREST_DB_PASSWORD:-change-this-postgrest-password}
     ports:
       - "127.0.0.1:5432:5432"
     volumes:
@@ -37,7 +38,7 @@ services:
       PGRST_OPENAPI_MODE: disabled
       PGRST_DB_MAX_ROWS: 1000
     ports:
-      - "127.0.0.1:3001:3000"
+      - "127.0.0.1:3002:3000"
 
 volumes:
   voyago_pgdata:

@@ -4,7 +4,8 @@ import { Toaster } from '@/components/ui/sonner';
 
 export const metadata: Metadata = {
   title: 'Voyago — Search. Book. Travel.',
-  description: 'Book flights and hotels worldwide. Compare prices, choose your seats, and manage your trips all in one place.',
+  description:
+    'Book flights and hotels worldwide. Compare prices, choose your seats, and manage your trips all in one place.',
   openGraph: {
     title: 'Voyago — Search. Book. Travel.',
     description: 'Book flights and hotels worldwide with confidence.',

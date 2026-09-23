@@ -13,7 +13,8 @@ export async function GET(req: NextRequest) {
     if(type) query=query.eq('type',type);
     const {data,error}=await query; if(error) throw error;
     let rows=data||[];
-    if(search){const q=search.toLowerCase(); rows=rows.filter(b=>b.reference.toLowerCase().includes(q)||(b.contact_email||'').toLowerCase().includes(q)||(b.supplier_reference||'').toLowerCase().includes(q));}
+    if(search){const q=search.toLowerCase(); rows=rows.filter((b: any)=>b.reference.toLowerCase().includes(q)||(b.contact_email||'').toLowerCase().includes(q)||(b.supplier_reference||'').toLowerCase().includes(q));}
     return successResponse({bookings:rows,total:rows.length});
   } catch(err){if(err instanceof Error&&err.message==='UNAUTHORIZED_STAFF')return errorResponse('Staff access required','FORBIDDEN',403);console.error(err);return errorResponse('Unable to load bookings','INTERNAL_ERROR',500);}
 }
+
