@@ -5,18 +5,17 @@ import { successResponse, errorResponse } from '@/lib/utils/api';
 import { supabaseAdmin } from '@/lib/supabase/server';
 import { getServerActor } from '@/lib/auth/server';
 import { requireAgentRecord } from '@/lib/auth/agent';
+import { calculateAgencyPrice } from '@/lib/services/pricing-service';
 
 function makeReference() {
   return `AG-${new Date().getFullYear()}-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
 }
 
-async function findCustomer(actorId: string | null, email: string, phone: string, name: string, agentMode = false) {
-  if (actorId && !agentMode) {
+async function findCustomer(actorId: string, email: string, phone: string, name: string, agentMode: boolean) {
+  if (!agentMode) {
     const { data } = await supabaseAdmin.from('customers').select('*').eq('user_id', actorId).maybeSingle();
     if (data) return data;
-  }
-
-  if (actorId && agentMode) {
+  } else {
     const { data } = await supabaseAdmin.from('customers').select('*').eq('created_by', actorId).eq('email', email).maybeSingle();
     if (data) return data;
   }
@@ -32,13 +31,13 @@ async function findCustomer(actorId: string | null, email: string, phone: string
   if (existing) return existing;
 
   const { data, error } = await supabaseAdmin.from('customers').insert({
-    user_id: actorId,
+    user_id: agentMode ? null : actorId,
     full_name: name || email.split('@')[0],
     email,
     phone,
     country: 'PK',
     nationality: 'Pakistani',
-    ...(agentMode && actorId ? { created_by: actorId } : {}),
+    ...(agentMode ? { created_by: actorId } : {}),
   }).select('*').single();
 
   if (error) throw error;
@@ -130,12 +129,11 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     if (!['flight', 'hotel'].includes(body.type)) return errorResponse('Booking type is required', 'VALIDATION_ERROR', 400);
-    if (!body.contactEmail || !body.contactPhone || !body.totalAmount?.amount) {
-      return errorResponse('Contact details and total amount are required', 'VALIDATION_ERROR', 400);
-    }
+    if (!body.contactEmail || !body.contactPhone) return errorResponse('Contact details are required', 'VALIDATION_ERROR', 400);
 
     const actor = await getServerActor();
     if (!actor) return errorResponse('Login required', 'AUTH_REQUIRED', 401);
+
     const details = body.flightDetails || body.hotelDetails || {};
     const passengerOrGuest = details.passengers?.[0] || details.guests?.[0];
     const customerName = passengerOrGuest
@@ -144,29 +142,58 @@ export async function POST(req: NextRequest) {
 
     const agent = actor.role === 'agent' ? await requireAgentRecord(actor.id) : null;
     const customer = await findCustomer(actor.id, body.contactEmail, body.contactPhone, customerName, !!agent);
-    const amount = Number(body.totalAmount.amount);
-    const currency = body.totalAmount.currency || 'PKR';
-    const reference = makeReference();
-    const supplierCost = Number(body.supplierCost || amount);
-    const markup = Math.max(0, amount - supplierCost);
 
+    const supplierCost = Number(body.supplierCost ?? details.supplierCost ?? 0);
+    const requestedPrice = Number(body.totalAmount?.amount ?? 0);
+    const currency = String(body.totalAmount?.currency || 'PKR').toUpperCase();
+    if (currency !== 'PKR') return errorResponse('Only PKR bookings are supported', 'CURRENCY_NOT_SUPPORTED', 400);
+    if (!Number.isFinite(supplierCost) || supplierCost < 0) return errorResponse('Invalid supplier cost', 'VALIDATION_ERROR', 400);
+    if (!Number.isFinite(requestedPrice) || requestedPrice <= 0) return errorResponse('A positive booking amount is required', 'VALIDATION_ERROR', 400);
+    if (supplierCost > requestedPrice) return errorResponse('Selling price cannot be below supplier cost', 'PRICE_BELOW_COST', 409);
+
+    const taxes = Number(body.taxes || 0);
+    const fees = Number(body.fees || 0);
+    const discount = Number(body.discount || 0);
+    if (![taxes, fees, discount].every(Number.isFinite) || taxes < 0 || fees < 0 || discount < 0) {
+      return errorResponse('Invalid taxes, fees or discount', 'VALIDATION_ERROR', 400);
+    }
+
+    const pricing = await calculateAgencyPrice({
+      supplierCost,
+      taxes,
+      fees,
+      discount,
+      requestedCustomerPrice: requestedPrice,
+      context: {
+        product: body.type,
+        supplier: body.supplierName || details.supplier,
+        airline: details.airline?.code || details.airlineCode,
+        route: details.segments?.[0]?.origin?.code && details.segments?.[0]?.destination?.code
+          ? `${details.segments[0].origin.code}-${details.segments[0].destination.code}`
+          : undefined,
+        hotelCategory: details.starRating ? `${details.starRating}_star` : undefined,
+        agentId: agent?.id,
+      },
+    });
+
+    const reference = makeReference();
     const { data: booking, error } = await supabaseAdmin.from('bookings').insert({
       reference,
       type: body.type,
       status: 'BOOKING_REQUESTED',
       customer_id: customer.id,
-      ...(agent ? { agent_id: agent.id } : {}),
+      ...(agent ? { agent_id: agent.id, agency_id: agent.agency_id || null } : {}),
       contact_email: body.contactEmail,
       contact_phone: body.contactPhone,
-      supplier_cost: supplierCost,
-      agency_markup: markup,
-      taxes: Number(body.taxes || 0),
-      fees: Number(body.fees || 0),
-      discount: Number(body.discount || 0),
-      customer_price: amount,
-      agency_margin: markup,
-      currency,
-      supplier_name: null,
+      supplier_cost: pricing.supplierCost,
+      agency_markup: pricing.markup,
+      taxes: pricing.taxes,
+      fees: pricing.fees,
+      discount: pricing.discount,
+      customer_price: pricing.customerPrice,
+      agency_margin: pricing.agencyMargin,
+      currency: 'PKR',
+      supplier_name: body.supplierName || details.supplier || null,
       automatic_supplier_booking_enabled: false,
       notes: body.notes || null,
     }).select('*').single();
@@ -181,9 +208,9 @@ export async function POST(req: NextRequest) {
         : `${details.name || 'Hotel'} — ${details.room?.type || 'Room'}`,
       supplier_offer_id: details.id || null,
       supplier_property_id: body.type === 'hotel' ? details.id || null : null,
-      supplier_cost: supplierCost,
-      customer_price: amount,
-      currency,
+      supplier_cost: pricing.supplierCost,
+      customer_price: pricing.customerPrice,
+      currency: 'PKR',
       metadata: details,
     })).error;
     if (itemError) console.error('Booking item warning:', itemError);
@@ -192,8 +219,8 @@ export async function POST(req: NextRequest) {
       booking_id: booking.id,
       status: 'BOOKING_REQUESTED',
       description: 'Booking request received by agency',
-      changed_by: actor?.id || null,
-      metadata: { source: 'customer_checkout' },
+      changed_by: actor.id,
+      metadata: { source: actor.role === 'agent' ? 'agent_portal' : 'customer_checkout', pricingRuleIds: pricing.appliedRuleIds },
     })).error;
     if (historyError) console.error('Booking history warning:', historyError);
 
@@ -218,6 +245,15 @@ export async function POST(req: NextRequest) {
       reference: booking.reference,
       status: booking.status,
       paymentStatus: 'pending',
+      pricing: {
+        supplierCost: pricing.supplierCost,
+        markup: pricing.markup,
+        taxes: pricing.taxes,
+        fees: pricing.fees,
+        discount: pricing.discount,
+        customerPrice: pricing.customerPrice,
+        agencyMargin: pricing.agencyMargin,
+      },
       message: 'Booking request received. The agency will complete supplier fulfillment after payment verification.',
     }, 201);
   } catch (err) {
