@@ -3,11 +3,11 @@ export const dynamic = 'force-dynamic';
 import { NextRequest } from 'next/server';
 import { successResponse, errorResponse } from '@/lib/utils/api';
 import { supabaseAdmin } from '@/lib/supabase/server';
-import { requireStaff } from '@/lib/auth/server';
+import { requireAdmin } from '@/lib/auth/server';
 
 export async function GET(req: NextRequest) {
   try {
-    await requireStaff();
+    await requireAdmin();
     const statusFilter=new URL(req.url).searchParams.get('status');
     let q=supabaseAdmin.from('bookings').select('*,customers(full_name,email,phone),fulfillment_tasks(*)').order('created_at',{ascending:true});
     const {data,error}=await q; if(error) throw error;
