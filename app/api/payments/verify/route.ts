@@ -16,7 +16,7 @@ export async function POST(req:NextRequest){
   }).eq('id',body.paymentId).select('*').single();
   if(ue)throw ue;
   const bookingStatus=status==='verified'?'PAYMENT_RECEIVED':'PAYMENT_PENDING';
-  await supabaseAdmin.from('payment_transactions').update({status,updated_at:now}).eq('payment_id',payment.id);
+  await supabaseAdmin.from('payment_transactions').update({status}).eq('payment_id',payment.id);
   await supabaseAdmin.from('bookings').update({status:bookingStatus,updated_at:now}).eq('id',payment.booking_id);
   await supabaseAdmin.from('booking_status_history').insert({booking_id:payment.booking_id,status:bookingStatus,description:status==='verified'?'Payment verified by agency':'Payment rejected by agency',changed_by:actor.id,metadata:{paymentId:payment.id}});
   const {data:booking}=await supabaseAdmin.from('bookings').select('customer_id,reference').eq('id',payment.booking_id).single();
