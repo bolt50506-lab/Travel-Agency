@@ -58,7 +58,7 @@ function generateRooms(seed: number, nights: number): HotelRoom[] {
   for (let i = 0; i < numRooms; i++) {
     const roomSeed = seed + i * 97;
     const rt = roomTypes[i % roomTypes.length];
-    const pricePerNight = 80 + Math.floor(seededRandom(roomSeed) * 400);
+    const pricePerNight = 18000 + Math.floor(seededRandom(roomSeed) * 72000);
     const taxes = Math.round(pricePerNight * nights * 0.12);
     const total = pricePerNight * nights + taxes;
 
@@ -74,7 +74,7 @@ function generateRooms(seed: number, nights: number): HotelRoom[] {
         ? 'Free cancellation up to 48 hours before check-in'
         : 'Non-refundable',
       refundable: seededRandom(roomSeed + 50) > 0.4,
-      pricePerNight: { amount: pricePerNight, currency: 'USD' },
+      pricePerNight: { amount: pricePerNight, currency: 'PKR' },
       totalPrice: { amount: total, currency: 'USD' },
       taxesAndFees: { amount: taxes, currency: 'USD' },
       roomsAvailable: Math.floor(seededRandom(roomSeed + 60) * 10) + 1,
