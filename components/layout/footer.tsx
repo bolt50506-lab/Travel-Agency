@@ -34,7 +34,7 @@ const footerLinks = {
 export function Footer() {
   const pathname = usePathname();
 
-  if (pathname?.startsWith('/admin')) return null;
+  if (pathname?.startsWith('/admin') || pathname?.startsWith('/agent')) return null;
 
   return (
     <footer className="border-t border-border bg-muted/30 mt-16">
@@ -45,7 +45,7 @@ export function Footer() {
               <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary">
                 <Globe className="h-5 w-5 text-primary-foreground" />
               </div>
-              <span className="text-xl font-bold tracking-tight">Voyago</span>
+              <span className="text-xl font-bold tracking-tight">Destino Travels</span>
             </Link>
             <p className="mt-3 text-sm text-muted-foreground max-w-xs">
               Search. Book. Travel. Your trusted partner for flights and hotels worldwide.
@@ -87,10 +87,10 @@ export function Footer() {
 
         <div className="mt-10 flex flex-col items-center justify-between gap-4 border-t border-border pt-6 sm:flex-row">
           <p className="text-sm text-muted-foreground">
-            &copy; {new Date().getFullYear()} Voyago. All rights reserved.
+            &copy; {new Date().getFullYear()} Destino Travels. All rights reserved.
           </p>
           <p className="text-xs text-muted-foreground">
-            Prices are shown in USD. Taxes and fees included where indicated.
+            Prices are shown in PKR. Taxes and fees are included where indicated.
           </p>
         </div>
       </div>
