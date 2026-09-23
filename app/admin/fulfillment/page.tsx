@@ -531,12 +531,12 @@ export default function FulfillmentPage() {
                     </Button>
                   )}
                   {selectedBooking.type === 'flight' && (
-                    <Button size="sm" disabled={actionLoading} onClick={() => doAction('mark_ticketed')}>
+                    <Button size="sm" disabled={actionLoading} onClick={() => doAction('mark_ticketed', { supplierName, supplierReference: supplierRef, pnr, ticketNumber })}>
                       <CheckCircle2 className="h-4 w-4 mr-1" /> Mark Ticketed
                     </Button>
                   )}
                   {selectedBooking.type === 'hotel' && (
-                    <Button size="sm" disabled={actionLoading} onClick={() => doAction('mark_voucher_issued')}>
+                    <Button size="sm" disabled={actionLoading} onClick={() => doAction('mark_voucher_issued', { supplierName, supplierReference: supplierRef, hotelConfirmationNumber: hotelConf })}>
                       <CheckCircle2 className="h-4 w-4 mr-1" /> Mark Voucher Issued
                     </Button>
                   )}
