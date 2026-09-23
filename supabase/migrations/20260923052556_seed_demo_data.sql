@@ -41,7 +41,7 @@ VALUES (
   'Islamabad',
   'Islamabad, Pakistan',
   '+92-51-000-0000',
-  'info@destinotravels.com',
+  '',
   'https://b2b.destinotravels.com',
   'DT001',
   '{"default_currency": "PKR", "timezone": "Asia/Karachi", "phone_country_code": "+92"}'::jsonb
