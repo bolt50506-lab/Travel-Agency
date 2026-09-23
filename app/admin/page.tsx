@@ -34,6 +34,7 @@ interface DashboardData {
     fulfillmentPending: number;
     refundRequests: number;
   };
+  recent?: Array<{ id:string; reference:string; type:string; status:string; customer_price:number; currency:string; created_at:string }>;
   charts: {
     bookingsOverTime: Array<{ date: string; bookings: number }>;
     revenueOverTime: Array<{ date: string; revenue: number }>;
@@ -178,25 +179,15 @@ export default function AdminDashboardPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              <TableRow>
-                <TableCell className="font-medium">AG-2026-000145</TableCell>
-                <TableCell>Flight</TableCell>
-                <TableCell><Badge variant="secondary">AGENCY_PROCESSING</Badge></TableCell>
-                <TableCell className="text-right font-medium">{formatPrice(1240)}</TableCell>
+            {(data.recent || []).map((booking) => (
+              <TableRow key={booking.id}>
+                <TableCell className="font-medium">{booking.reference}</TableCell>
+                <TableCell className="capitalize">{booking.type}</TableCell>
+                <TableCell><Badge variant="secondary">{booking.status}</Badge></TableCell>
+                <TableCell className="text-right font-medium">{formatPrice(Number(booking.customer_price || 0), booking.currency || 'PKR')}</TableCell>
               </TableRow>
-              <TableRow>
-                <TableCell className="font-medium">AG-2026-000144</TableCell>
-                <TableCell>Hotel</TableCell>
-                <TableCell><Badge>VOUCHER_ISSUED</Badge></TableCell>
-                <TableCell className="text-right font-medium">{formatPrice(560)}</TableCell>
-              </TableRow>
-              <TableRow>
-                <TableCell className="font-medium">AG-2026-000143</TableCell>
-                <TableCell>Flight</TableCell>
-                <TableCell><Badge>TICKETED</Badge></TableCell>
-                <TableCell className="text-right font-medium">{formatPrice(842)}</TableCell>
-              </TableRow>
-            </TableBody>
+            ))}
+          </TableBody>
           </Table>
         </Card>
       </div>
