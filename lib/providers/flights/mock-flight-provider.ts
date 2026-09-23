@@ -140,7 +140,7 @@ function calculatePrice(cabinClass: CabinClass, stops: number, duration: number,
     cabinClass === 'business' ? 3 :
     4.5;
 
-  const baseFare = (200 + seededRandom(seed) * 800) * cabinMultiplier;
+  const baseFare = (55000 + seededRandom(seed) * 165000) * cabinMultiplier;
   const stopDiscount = stops > 0 ? 0.85 : 1;
   const durationFactor = 1 + duration / 10000;
   const base = Math.round(baseFare * stopDiscount * durationFactor);
@@ -188,7 +188,7 @@ export class MockFlightProvider implements IFlightProvider {
       offers.push({
         id: `offer-${offerSeed}`,
         segments,
-        totalPrice: { amount: price.total, currency: 'USD' },
+        totalPrice: { amount: price.total, currency: 'PKR' },
         basePrice: { amount: price.base, currency: 'USD' },
         taxesAndFees: { amount: price.taxes, currency: 'USD' },
         stops,
