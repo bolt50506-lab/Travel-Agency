@@ -19,3 +19,13 @@ jobs:
       - run: npm run typecheck
       - run: npm run lint
       - run: npm run build
+      - name: Smoke test self-hosted database schema
+        run: |
+          docker compose --env-file .env.example -f docker-compose.self-hosted.yml up -d db
+          for i in $(seq 1 30); do
+            if docker exec voyago-postgres pg_isready -U voyago -d voyago >/dev/null 2>&1; then break; fi
+            sleep 2
+          done
+          docker exec voyago-postgres psql -U voyago -d voyago -v ON_ERROR_STOP=1 -c "SELECT count(*) FROM information_schema.tables WHERE table_schema='public';"
+          docker exec voyago-postgres psql -U voyago -d voyago -v ON_ERROR_STOP=1 -c "SELECT id FROM local_users LIMIT 0; SELECT id FROM bookings LIMIT 0; SELECT id FROM payments LIMIT 0; SELECT id FROM pricing_rules LIMIT 0; SELECT id FROM quotations LIMIT 0;"
+          docker compose --env-file .env.example -f docker-compose.self-hosted.yml down -v
