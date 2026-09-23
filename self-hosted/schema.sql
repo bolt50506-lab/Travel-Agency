@@ -282,6 +282,8 @@ CREATE TABLE IF NOT EXISTS bookings (
   status booking_status NOT NULL DEFAULT 'BOOKING_REQUESTED',
   customer_id uuid REFERENCES customers(id) ON DELETE SET NULL,
   agent_id uuid REFERENCES agents(id) ON DELETE SET NULL,
+  booked_by_user_id uuid REFERENCES profiles(id) ON DELETE SET NULL,
+  booked_by_role text,
   agency_id uuid REFERENCES agencies(id) ON DELETE SET NULL,
   contact_email text NOT NULL,
   contact_phone text NOT NULL,
