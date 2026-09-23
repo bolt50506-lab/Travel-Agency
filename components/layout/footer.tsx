@@ -54,9 +54,9 @@ export function Footer() {
               <Link href="#" className="text-muted-foreground hover:text-foreground">
                 <Twitter className="h-4 w-4" />
               </Link>
-              <Link href="#" className="text-muted-foreground hover:text-foreground">
+              <a href="https://www.facebook.com/p/Destino-Travels-61579887292104/" target="_blank" rel="noreferrer" className="text-muted-foreground hover:text-foreground" aria-label="Destino Travels on Facebook">
                 <Facebook className="h-4 w-4" />
-              </Link>
+              </a>
               <Link href="#" className="text-muted-foreground hover:text-foreground">
                 <Instagram className="h-4 w-4" />
               </Link>
