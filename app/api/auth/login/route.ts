@@ -6,8 +6,8 @@ import { successResponse, errorResponse, validateBody } from '@/lib/utils/api';
 import { supabaseAdmin } from '@/lib/supabase/server';
 
 const supabaseAuth = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+  process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.invalid',
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'build-placeholder-key',
   { auth: { autoRefreshToken: false, persistSession: false, detectSessionInUrl: false } }
 );
 
