@@ -69,6 +69,7 @@ interface BookingDetail {
     completedAt?: string;
   };
   documents: { id: string; type: string; filename: string; customerVisible: boolean; createdAt: string }[];
+  payments?: { id: string; amount: number; currency: string; status: string; reference: string }[];
   timeline: { id: string; status: string; description: string; timestamp: string }[];
 }
 
@@ -167,6 +168,33 @@ export default function FulfillmentPage() {
       fetchQueue();
     } catch (err) {
       setActionResult(err instanceof Error ? err.message : 'Action failed');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const requestRefund = async () => {
+    if (!selectedBooking) return;
+    const payment = (selectedBooking.payments || []).find((item) => item.status === 'verified');
+    if (!payment) {
+      setActionResult('No verified payment is available for refund.');
+      return;
+    }
+    setActionLoading(true);
+    setActionResult(null);
+    try {
+      const res = await fetch('/api/payments/refund', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ paymentId: payment.id, amount: Number(payment.amount), reason: 'Refund initiated from fulfillment queue' }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Refund request failed');
+      setActionResult('Refund processing has been initiated.');
+      await openBooking(selectedBooking.id);
+      fetchQueue();
+    } catch (err) {
+      setActionResult(err instanceof Error ? err.message : 'Refund request failed');
     } finally {
       setActionLoading(false);
     }
@@ -521,7 +549,7 @@ export default function FulfillmentPage() {
                   <Button size="sm" variant="destructive" disabled={actionLoading} onClick={() => doAction('cancel', { reason: 'Cancelled by agency' })}>
                     Cancel
                   </Button>
-                  <Button size="sm" variant="destructive" disabled={actionLoading} onClick={() => doAction('refund')}>
+                  <Button size="sm" variant="destructive" disabled={actionLoading} onClick={() => void requestRefund()}>
                     <DollarSign className="h-4 w-4 mr-1" /> Refund
                   </Button>
                 </div>
