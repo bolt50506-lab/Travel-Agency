@@ -90,6 +90,7 @@ export const paymentSchema = z.object({
     currency: z.literal('PKR'),
   }),
   method: z.enum(['card', 'bank_transfer', 'raast', 'jazzcash', 'easypaisa', 'manual']),
+  paymentReference: z.string().max(120).optional(),
   card: z
     .object({
       number: z.string().min(12),
