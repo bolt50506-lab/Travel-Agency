@@ -4,11 +4,11 @@ import { Toaster } from '@/components/ui/sonner';
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'),
-  title: 'Voyago — Search. Book. Travel.',
+  title: 'Destino Travels — Search. Book. Travel.',
   description:
-    'Book flights and hotels from Pakistan with transparent PKR pricing, agency support, and simple trip management.',
+    'Book flights and hotels from Pakistan with transparent PKR pricing and trusted travel support.',
   openGraph: {
-    title: 'Voyago — Search. Book. Travel.',
+    title: 'Destino Travels — Search. Book. Travel.',
     description: 'Book flights and hotels from Pakistan with confidence.',
     type: 'website',
   },

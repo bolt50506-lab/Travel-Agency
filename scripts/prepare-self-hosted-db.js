@@ -10,11 +10,15 @@ const files = fs.readdirSync(migrationsDir).filter((name) => name.endsWith('.sql
 
 function stripSupabaseOnlySql(sql) {
   let out = sql;
+  // Remove whole Supabase-only DO blocks before stripping policy/storage statements.
+  // Doing this first prevents regex removal from leaving half of a PL/pgSQL block behind.
+  out = out.replace(/DO\s+\$\$[\s\S]*?END\s+\$\$\s*;/gi, (block) =>
+    /POLICY|storage\.objects/i.test(block) ? '' : block
+  );
   out = out.replace(/REFERENCES\s+auth\.users\s*\(id\)/gi, 'REFERENCES local_users(id)');
   out = out.replace(/ALTER TABLE\s+[^;]+?\s+ENABLE ROW LEVEL SECURITY\s*;/gis, '');
   out = out.replace(/DROP POLICY IF EXISTS[\s\S]*?;/gi, '');
   out = out.replace(/CREATE POLICY[\s\S]*?;/gi, '');
-  out = out.replace(/DO\s+\$\$[\s\S]*?END\s+\$\$\s*;/gi, (block) => /POLICY|storage\.objects/i.test(block) ? '' : block);
   out = out.replace(/INSERT INTO\s+storage\.buckets[\s\S]*?;/gi, '');
   out = out.replace(/UPDATE\s+storage\.[\s\S]*?;/gi, '');
   out = out.replace(/DELETE FROM\s+storage\.[\s\S]*?;/gi, '');

@@ -4,14 +4,20 @@ import { NextRequest } from 'next/server';
 import { successResponse, errorResponse } from '@/lib/utils/api';
 import { supabaseAdmin } from '@/lib/supabase/server';
 import { getServerActor } from '@/lib/auth/server';
+import { requireAgentRecord } from '@/lib/auth/agent';
 
 function makeReference() {
   return `AG-${new Date().getFullYear()}-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
 }
 
-async function findCustomer(actorId: string | null, email: string, phone: string, name: string) {
-  if (actorId) {
+async function findCustomer(actorId: string | null, email: string, phone: string, name: string, agentMode = false) {
+  if (actorId && !agentMode) {
     const { data } = await supabaseAdmin.from('customers').select('*').eq('user_id', actorId).maybeSingle();
+    if (data) return data;
+  }
+
+  if (actorId && agentMode) {
+    const { data } = await supabaseAdmin.from('customers').select('*').eq('created_by', actorId).eq('email', email).maybeSingle();
     if (data) return data;
   }
 
@@ -32,6 +38,7 @@ async function findCustomer(actorId: string | null, email: string, phone: string
     phone,
     country: 'PK',
     nationality: 'Pakistani',
+    ...(agentMode && actorId ? { created_by: actorId } : {}),
   }).select('*').single();
 
   if (error) throw error;
@@ -129,7 +136,8 @@ export async function POST(req: NextRequest) {
       ? [passengerOrGuest.firstName, passengerOrGuest.lastName].filter(Boolean).join(' ')
       : body.contactEmail.split('@')[0];
 
-    const customer = await findCustomer(actor?.id || null, body.contactEmail, body.contactPhone, customerName);
+    const agent = actor?.role === 'agent' ? await requireAgentRecord(actor.id) : null;
+    const customer = await findCustomer(actor?.id || null, body.contactEmail, body.contactPhone, customerName, !!agent);
     const amount = Number(body.totalAmount.amount);
     const currency = body.totalAmount.currency || 'PKR';
     const reference = makeReference();
@@ -141,6 +149,7 @@ export async function POST(req: NextRequest) {
       type: body.type,
       status: 'BOOKING_REQUESTED',
       customer_id: customer.id,
+      ...(agent ? { agent_id: agent.id } : {}),
       contact_email: body.contactEmail,
       contact_phone: body.contactPhone,
       supplier_cost: supplierCost,

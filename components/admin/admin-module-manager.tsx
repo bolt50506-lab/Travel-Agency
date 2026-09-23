@@ -10,6 +10,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
 
 export default function AdminModuleManager({ module, title, description }: { module: string; title: string; description: string }) {
+  const readOnly = ['bookings'].includes(module);
   const [data,setData]=useState<{fields:string[];rows:any[]}>({fields:[],rows:[]});
   const [loading,setLoading]=useState(true);
   const [search,setSearch]=useState('');
@@ -29,7 +30,7 @@ export default function AdminModuleManager({ module, title, description }: { mod
   return <div className="space-y-6">
     <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
       <div><h1 className="text-2xl font-bold">{title}</h1><p className="mt-1 text-sm text-muted-foreground">{description}</p></div>
-      <div className="flex gap-2"><Button variant="outline" onClick={load}><RefreshCw className="mr-2 h-4 w-4"/>Refresh</Button><Button onClick={()=>setShowForm(!showForm)}><Plus className="mr-2 h-4 w-4"/>New</Button></div>
+      <div className="flex gap-2"><Button variant="outline" onClick={load}><RefreshCw className="mr-2 h-4 w-4"/>Refresh</Button>{!readOnly && <Button onClick={()=>setShowForm(!showForm)}><Plus className="mr-2 h-4 w-4"/>New</Button>}</div>
     </div>
 
     {showForm && <Card className="p-5">

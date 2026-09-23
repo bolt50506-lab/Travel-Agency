@@ -92,3 +92,9 @@ export async function requireAdmin() {
   if (!actor || actor.role !== 'admin') throw new Error('UNAUTHORIZED_ADMIN');
   return actor;
 }
+
+export async function requireAgent() {
+  const actor = await getServerActor();
+  if (!actor || actor.role !== 'agent') throw new Error('UNAUTHORIZED_AGENT');
+  return actor;
+}

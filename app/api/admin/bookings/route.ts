@@ -3,7 +3,7 @@ export const dynamic = 'force-dynamic';
 import { NextRequest } from 'next/server';
 import { successResponse, errorResponse } from '@/lib/utils/api';
 import { supabaseAdmin } from '@/lib/supabase/server';
-import { requireStaff } from '@/lib/auth/server';
+import { requireAdmin } from '@/lib/auth/server';
 
 function makeReference() {
   return `AG-${new Date().getFullYear()}-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
@@ -47,7 +47,7 @@ async function findOrCreateCustomer(input: {
 
 export async function GET(req: NextRequest) {
   try {
-    await requireStaff();
+    await requireAdmin();
 
     const { searchParams } = new URL(req.url);
     const status = searchParams.get('status');
@@ -78,7 +78,7 @@ export async function GET(req: NextRequest) {
 
     return successResponse({ bookings: rows, total: rows.length });
   } catch (err) {
-    if (err instanceof Error && err.message === 'UNAUTHORIZED_STAFF') {
+    if (err instanceof Error && err.message === 'UNAUTHORIZED_ADMIN') {
       return errorResponse('Staff access required', 'FORBIDDEN', 403);
     }
     console.error('Admin bookings GET error:', err);
@@ -88,7 +88,7 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const actor = await requireStaff();
+    const actor = await requireAdmin();
     const body = await req.json();
 
     const type = body.type === 'hotel' ? 'hotel' : body.type === 'flight' ? 'flight' : null;
@@ -203,7 +203,7 @@ export async function POST(req: NextRequest) {
       message: 'Booking created successfully',
     }, 201);
   } catch (err) {
-    if (err instanceof Error && err.message === 'UNAUTHORIZED_STAFF') {
+    if (err instanceof Error && err.message === 'UNAUTHORIZED_ADMIN') {
       return errorResponse('Staff access required', 'FORBIDDEN', 403);
     }
     console.error('Admin booking creation error:', err);

@@ -1,9 +1,10 @@
 import { NextRequest } from 'next/server';
 import { successResponse, errorResponse } from '@/lib/utils/api';
 import { supabaseAdmin } from '@/lib/supabase/server';
-import { requireStaff } from '@/lib/auth/server';
+import { requireAdmin } from '@/lib/auth/server';
 
 const configs: Record<string, { table: string; fields: string[]; search: string[] }> = {
+  bookings: { table: 'bookings', fields: ['reference','type','status','contact_email','contact_phone','customer_price','currency','supplier_name','supplier_reference','notes'], search: ['reference','contact_email','contact_phone','status','type'] },
   customers: { table: 'customers', fields: ['full_name','email','phone','cnic','passport_number','passport_expiry','city'], search: ['full_name','email','phone'] },
   travelers: { table: 'travelers', fields: ['customer_id','first_name','last_name','date_of_birth','passport_number','passport_expiry','nationality'], search: ['first_name','last_name','passport_number'] },
   leads: { table: 'leads', fields: ['name','email','phone','service_type','destination','travel_date','status'], search: ['name','email','phone','destination'] },
@@ -13,8 +14,10 @@ const configs: Record<string, { table: string; fields: string[]; search: string[
   visa_applications: { table: 'visa_applications', fields: ['reference','customer_id','traveler_id','destination','visa_type','entry_type','status','embassy_or_vfs','government_fee','service_fee'], search: ['reference','destination','visa_type'] },
   insurance_products: { table: 'insurance_products', fields: ['name','provider','destination_scope','coverage_summary','supplier_cost','selling_price','currency'], search: ['name','provider'] },
   reissue_requests: { table: 'reissue_requests', fields: ['booking_id','reason','new_travel_date','supplier_penalty','agency_fee','fare_difference','total_due','status'], search: ['booking_id','reason'] },
-  expenses: { table: 'expenses', fields: ['category','description','amount','currency','expense_date'], search: ['category','description'] },
-  b2b_agencies: { table: 'b2b_agencies', fields: ['name','email','phone','city','credit_limit','wallet_balance','commission_rate'], search: ['name','email','phone'] }
+  b2b_agencies: { table: 'b2b_agencies', fields: ['name','email','phone','city','credit_limit','wallet_balance','commission_rate'], search: ['name','email','phone'] },
+  agents: { table: 'agents', fields: ['user_id','agency_id','agent_code','commission_rate','is_active','hired_at'], search: ['agent_code','user_id'] },
+  pricing_rules: { table: 'pricing_rules', fields: ['name','service_type','rule_type','value','currency','is_active','priority'], search: ['name','service_type','rule_type'] },
+  expenses: { table: 'expenses', fields: ['category','description','amount','currency','expense_date'], search: ['category','description'] }
 };
 
 function sanitize(body: Record<string, unknown>, fields: string[]) {
@@ -27,7 +30,7 @@ function sanitize(body: Record<string, unknown>, fields: string[]) {
 
 export async function GET(req: NextRequest) {
   try {
-    await requireStaff();
+    await requireAdmin();
     const params = new URL(req.url).searchParams;
     const moduleName = params.get('module') || '';
     const cfg = configs[moduleName];
@@ -41,7 +44,7 @@ export async function GET(req: NextRequest) {
 
     return successResponse({ module: moduleName, fields: cfg.fields, rows });
   } catch (err) {
-    if (err instanceof Error && err.message === 'UNAUTHORIZED_STAFF') return errorResponse('Staff access required', 'FORBIDDEN', 403);
+    if (err instanceof Error && err.message === 'UNAUTHORIZED_ADMIN') return errorResponse('Staff access required', 'FORBIDDEN', 403);
     console.error(err);
     return errorResponse('Unable to load module', 'INTERNAL_ERROR', 500);
   }
@@ -49,7 +52,7 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const actor = await requireStaff();
+    const actor = await requireAdmin();
     const body = await req.json();
     const cfg = configs[body.module];
     if (!cfg) return errorResponse('Unknown module', 'MODULE_NOT_FOUND', 404);
@@ -67,7 +70,7 @@ export async function POST(req: NextRequest) {
 
 export async function PATCH(req: NextRequest) {
   try {
-    const actor = await requireStaff();
+    const actor = await requireAdmin();
     const body = await req.json();
     const cfg = configs[body.module];
     if (!cfg || !body.id) return errorResponse('Module and record ID are required', 'VALIDATION_ERROR', 400);

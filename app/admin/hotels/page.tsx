@@ -1,7 +1,3 @@
 'use client';
-
 import AdminPlaceholder from '@/components/admin/admin-placeholder';
-
-export default function AdminHotelsPage() {
-  return <AdminPlaceholder title="Hotels" description="View and manage hotel reservations, property listings, and room inventory across the platform." />;
-}
+export default function AdminHotelsPage(){return <AdminPlaceholder title="Hotel Operations" description="Review hotel booking activity and manage customer hotel fulfillment." module="bookings" />;}

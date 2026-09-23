@@ -3,11 +3,11 @@ export const dynamic = 'force-dynamic';
 import { NextRequest } from 'next/server';
 import { successResponse, errorResponse } from '@/lib/utils/api';
 import { supabaseAdmin } from '@/lib/supabase/server';
-import { requireStaff } from '@/lib/auth/server';
+import { requireAdmin } from '@/lib/auth/server';
 
 export async function GET(_req: NextRequest) {
   try {
-    await requireStaff();
+    await requireAdmin();
     const { data: bookings, error } = await supabaseAdmin.from('bookings').select('id,type,status,customer_price,agency_margin,currency,created_at').order('created_at',{ascending:false});
     if (error) throw error;
     const rows = bookings || [];
@@ -27,7 +27,7 @@ export async function GET(_req: NextRequest) {
     const days = Array.from({length:7},(_,i)=>{const d=new Date(); d.setDate(d.getDate()-(6-i)); const key=d.toISOString().slice(0,10); return {date:key.slice(5), bookings:rows.filter((b: any)=>b.created_at?.slice(0,10)===key).length, revenue:rows.filter((b: any)=>b.created_at?.slice(0,10)===key).reduce((s: number,b: any)=>s+Number(b.customer_price||0),0)};});
     return successResponse({cards,charts:{bookingsOverTime:days.map(d=>({date:d.date,bookings:d.bookings})),revenueOverTime:days.map(d=>({date:d.date,revenue:d.revenue})),flightVsHotel:[{name:'Flights',value:cards.flightBookings},{name:'Hotels',value:cards.hotelBookings}]},recent:rows.slice(0,10)});
   } catch (err) {
-    if (err instanceof Error && err.message === 'UNAUTHORIZED_STAFF') return errorResponse('Staff access required','FORBIDDEN',403);
+    if (err instanceof Error && err.message === 'UNAUTHORIZED_ADMIN') return errorResponse('Staff access required','FORBIDDEN',403);
     console.error(err); return errorResponse('Unable to load dashboard','INTERNAL_ERROR',500);
   }
 }

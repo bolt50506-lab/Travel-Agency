@@ -18,7 +18,7 @@ export function Header() {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
 
-  if (pathname?.startsWith('/admin')) return null;
+  if (pathname?.startsWith('/admin') || pathname?.startsWith('/agent')) return null;
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/70 bg-background/80 backdrop-blur-xl">
@@ -30,7 +30,7 @@ export function Header() {
               <Sparkles className="absolute -right-1 -top-1 h-3.5 w-3.5 text-cyan-300" />
             </div>
             <div>
-              <span className="block text-lg font-black tracking-tight">Voyago</span>
+              <span className="block text-lg font-black tracking-tight">Destino Travels</span>
               <span className="hidden text-[10px] font-medium uppercase tracking-[0.16em] text-muted-foreground sm:block">Travel smarter</span>
             </div>
           </Link>
