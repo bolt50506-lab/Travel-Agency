@@ -87,7 +87,7 @@ export const paymentSchema = z.object({
   bookingReference: z.string().min(1),
   amount: z.object({
     amount: z.number().positive(),
-    currency: z.enum(['PKR', 'USD', 'EUR', 'GBP', 'AED', 'SAR']),
+    currency: z.literal('PKR'),
   }),
   method: z.enum(['card', 'bank_transfer', 'raast', 'jazzcash', 'easypaisa', 'manual']),
   card: z
