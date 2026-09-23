@@ -4,6 +4,7 @@ import { NextRequest } from 'next/server';
 import { successResponse, errorResponse } from '@/lib/utils/api';
 import { supabaseAdmin } from '@/lib/supabase/server';
 import { requireAdmin } from '@/lib/auth/server';
+import { calculateAgencyPrice } from '@/lib/services/pricing-service';
 
 function makeReference() {
   return `AG-${new Date().getFullYear()}-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
@@ -109,6 +110,7 @@ export async function POST(req: NextRequest) {
     if (!Number.isFinite(supplierCost) || supplierCost < 0) {
       return errorResponse('Supplier cost cannot be negative', 'VALIDATION_ERROR', 400);
     }
+    if (currency !== 'PKR') return errorResponse('Only PKR bookings are supported', 'CURRENCY_NOT_SUPPORTED', 400);
 
     const customer = await findOrCreateCustomer({
       name: customerName,
@@ -118,8 +120,18 @@ export async function POST(req: NextRequest) {
     });
 
     const reference = makeReference();
-    const margin = Math.max(0, amount - supplierCost);
     const details = body.details && typeof body.details === 'object' ? body.details : {};
+    const taxes = Math.max(0, Number(body.taxes || 0));
+    const fees = Math.max(0, Number(body.fees || 0));
+    const discount = Math.max(0, Number(body.discount || 0));
+    const pricing = await calculateAgencyPrice({
+      supplierCost,
+      taxes,
+      fees,
+      discount,
+      requestedCustomerPrice: amount,
+      context: { product: type, supplier: body.supplierName || undefined },
+    });
 
     const created = await supabaseAdmin
       .from('bookings')
@@ -131,13 +143,13 @@ export async function POST(req: NextRequest) {
         contact_email: contactEmail,
         contact_phone: contactPhone,
         supplier_cost: supplierCost,
-        agency_markup: margin,
-        taxes: Number(body.taxes || 0),
-        fees: Number(body.fees || 0),
-        discount: Number(body.discount || 0),
-        customer_price: amount,
-        agency_margin: margin,
-        currency,
+        agency_markup: pricing.markup,
+        taxes: pricing.taxes,
+        fees: pricing.fees,
+        discount: pricing.discount,
+        customer_price: pricing.customerPrice,
+        agency_margin: pricing.agencyMargin,
+        currency: 'PKR',
         supplier_name: body.supplierName ? String(body.supplierName).trim() : null,
         notes: body.notes ? String(body.notes).trim() : null,
         automatic_supplier_booking_enabled: false,
@@ -158,8 +170,8 @@ export async function POST(req: NextRequest) {
         ? `${details.origin || 'Origin'} → ${details.destination || 'Destination'}`
         : `${details.hotelName || 'Hotel'} — ${details.roomType || 'Room'}`,
       supplier_cost: supplierCost,
-      customer_price: amount,
-      currency,
+      customer_price: pricing.customerPrice,
+      currency: 'PKR',
       metadata: details,
     });
     if (item.error) console.error('Booking item creation warning:', item.error);
