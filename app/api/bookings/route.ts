@@ -258,6 +258,21 @@ export async function POST(req: NextRequest) {
     })).error;
     if (taskError) console.error('Fulfillment task warning:', taskError);
 
+    if (agent && Number(agent.commission_rate || 0) > 0) {
+      const commissionRate = Number(agent.commission_rate);
+      const commissionAmount = Math.round(pricing.agencyMargin * commissionRate) / 100;
+      await supabaseAdmin.from('agent_commissions').insert({
+        booking_id: booking.id,
+        agent_id: agent.id,
+        basis_amount: pricing.agencyMargin,
+        commission_type: 'percentage_of_margin',
+        commission_rate: commissionRate,
+        commission_amount: commissionAmount,
+        currency: 'PKR',
+        status: 'PENDING',
+      });
+    }
+
     const notificationError = (await supabaseAdmin.from('notifications').insert({
       customer_id: customer.id,
       booking_id: booking.id,
