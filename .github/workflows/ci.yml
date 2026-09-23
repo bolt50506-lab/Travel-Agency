@@ -19,6 +19,9 @@ jobs:
       - run: npm run typecheck
       - run: npm run lint
       - run: npm run build
+        env:
+          POSTGREST_JWT_SECRET: ci-postgrest-jwt-secret-abcdefghijklmnopqrstuvwxyz-123456
+          LOCAL_AUTH_SECRET: ci-local-auth-secret-abcdefghijklmnopqrstuvwxyz-123456
       - name: Smoke test self-hosted database schema
         run: |
           docker compose --env-file .env.example -f docker-compose.self-hosted.yml up -d db
