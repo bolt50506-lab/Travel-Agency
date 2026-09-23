@@ -178,7 +178,7 @@ export default function HotelResultsPage() {
               </div>
 
               <div>
-                <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Max Price: PKR ${filters.maxPrice.toLocaleString()}/night</Label>
+                <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Max Price: PKR {filters.maxPrice.toLocaleString('en-PK')}/night</Label>
                 <input
                   type="range"
                   min={2000}
