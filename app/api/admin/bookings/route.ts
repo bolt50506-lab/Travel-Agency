@@ -55,19 +55,56 @@ export async function GET(req: NextRequest) {
     const type = searchParams.get('type');
     const search = (searchParams.get('search') || '').trim().toLowerCase();
 
+    // Do not rely on PostgREST relationship embedding here. The portal uses
+    // self-hosted PostgREST and the customers/fulfillment relationships can
+    // vary as migrations evolve. Load the base bookings first, then related
+    // records separately and merge them in memory.
     let query = supabaseAdmin
       .from('bookings')
-      .select('*,customers(full_name,email,phone),fulfillment_tasks(*)')
+      .select('*')
       .order('created_at', { ascending: false })
       .limit(200);
 
     if (status && status !== 'all') query = query.eq('status', status);
     if (type && type !== 'all') query = query.eq('type', type);
 
-    const { data, error } = await query;
-    if (error) throw error;
+    const { data: bookings, error: bookingsError } = await query;
+    if (bookingsError) throw bookingsError;
 
-    let rows = data || [];
+    let rows = bookings || [];
+    if (!rows.length) return successResponse({ bookings: [], total: 0 });
+
+    const bookingIds = rows.map((booking: any) => booking.id);
+    const customerIds = [...new Set(rows.map((booking: any) => booking.customer_id).filter(Boolean))];
+
+    const [customersResult, fulfillmentResult] = await Promise.all([
+      customerIds.length
+        ? supabaseAdmin.from('customers').select('id,full_name,email,phone').in('id', customerIds)
+        : Promise.resolve({ data: [], error: null } as any),
+      supabaseAdmin.from('fulfillment_tasks').select('*').in('booking_id', bookingIds),
+    ]);
+
+    if (customersResult.error) console.error('Admin booking customers warning:', customersResult.error);
+    if (fulfillmentResult.error) console.error('Admin booking fulfillment warning:', fulfillmentResult.error);
+
+    const customersById = new Map<string, any>();
+    for (const customer of customersResult.data || []) {
+      customersById.set(customer.id, customer);
+    }
+
+    const fulfillmentByBooking = new Map<string, any[]>();
+    for (const task of fulfillmentResult.data || []) {
+      const list = fulfillmentByBooking.get(task.booking_id) || [];
+      list.push(task);
+      fulfillmentByBooking.set(task.booking_id, list);
+    }
+
+    rows = rows.map((booking: any) => ({
+      ...booking,
+      customers: customersById.get(booking.customer_id) || null,
+      fulfillment_tasks: fulfillmentByBooking.get(booking.id) || [],
+    }));
+
     if (search) {
       rows = rows.filter((booking: any) =>
         String(booking.reference || '').toLowerCase().includes(search) ||
@@ -140,6 +177,8 @@ export async function POST(req: NextRequest) {
         type,
         status: 'BOOKING_REQUESTED',
         customer_id: customer.id,
+        booked_by_user_id: actor.id,
+        booked_by_role: actor.role,
         contact_email: contactEmail,
         contact_phone: contactPhone,
         supplier_cost: supplierCost,
