@@ -1,0 +1,43 @@
+import type { Airport, Airline } from '@/types/flight';
+
+export const mockAirports: Airport[] = [
+  { code: 'JFK', city: 'New York', name: 'John F. Kennedy International', country: 'United States' },
+  { code: 'LAX', city: 'Los Angeles', name: 'Los Angeles International', country: 'United States' },
+  { code: 'LHR', city: 'London', name: 'Heathrow Airport', country: 'United Kingdom' },
+  { code: 'CDG', city: 'Paris', name: 'Charles de Gaulle', country: 'France' },
+  { code: 'DXB', city: 'Dubai', name: 'Dubai International', country: 'United Arab Emirates' },
+  { code: 'SIN', city: 'Singapore', name: 'Changi Airport', country: 'Singapore' },
+  { code: 'HND', city: 'Tokyo', name: 'Haneda Airport', country: 'Japan' },
+  { code: 'SYD', city: 'Sydney', name: 'Sydney Kingsford Smith', country: 'Australia' },
+  { code: 'FRA', city: 'Frankfurt', name: 'Frankfurt am Main', country: 'Germany' },
+  { code: 'IST', city: 'Istanbul', name: 'Istanbul Airport', country: 'Turkey' },
+  { code: 'AMS', city: 'Amsterdam', name: 'Amsterdam Schiphol', country: 'Netherlands' },
+  { code: 'DOH', city: 'Doha', name: 'Hamad International', country: 'Qatar' },
+  { code: 'BOM', city: 'Mumbai', name: 'Chhatrapati Shivaji Maharaj International', country: 'India' },
+  { code: 'YYZ', city: 'Toronto', name: 'Toronto Pearson', country: 'Canada' },
+  { code: 'GRU', city: 'Sao Paulo', name: 'Sao Paulo Guarulhos', country: 'Brazil' },
+  { code: 'CPT', city: 'Cape Town', name: 'Cape Town International', country: 'South Africa' },
+  { code: 'HKG', city: 'Hong Kong', name: 'Hong Kong International', country: 'Hong Kong' },
+  { code: 'BCN', city: 'Barcelona', name: 'Barcelona-El Prat', country: 'Spain' },
+  { code: 'FCO', city: 'Rome', name: 'Fiumicino Airport', country: 'Italy' },
+  { code: 'BKK', city: 'Bangkok', name: 'Suvarnabhumi', country: 'Thailand' },
+];
+
+export const mockAirlines: Airline[] = [
+  { code: 'BA', name: 'British Airways' },
+  { code: 'AF', name: 'Air France' },
+  { code: 'EK', name: 'Emirates' },
+  { code: 'SQ', name: 'Singapore Airlines' },
+  { code: 'JL', name: 'Japan Airlines' },
+  { code: 'QF', name: 'Qantas Airways' },
+  { code: 'LH', name: 'Lufthansa' },
+  { code: 'TK', name: 'Turkish Airlines' },
+  { code: 'KL', name: 'KLM Royal Dutch Airlines' },
+  { code: 'QR', name: 'Qatar Airways' },
+  { code: 'AI', name: 'Air India' },
+  { code: 'AC', name: 'Air Canada' },
+  { code: 'AA', name: 'American Airlines' },
+  { code: 'DL', name: 'Delta Air Lines' },
+  { code: 'UA', name: 'United Airlines' },
+  { code: 'CX', name: 'Cathay Pacific' },
+];
