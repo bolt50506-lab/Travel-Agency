@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server';
 import { successResponse, errorResponse } from '@/lib/utils/api';
 import { supabaseAdmin } from '@/lib/supabase/server';
-import { requireStaff } from '@/lib/auth/server';
+import { requireAdmin } from '@/lib/auth/server';
 
 export async function POST(req:NextRequest){
  try{
@@ -25,5 +25,5 @@ export async function POST(req:NextRequest){
     body:status==='verified'?'Payment for '+booking.reference+' was verified. The agency can now process your booking.':(body.reason||'Please contact the agency regarding your payment.')
   });
   return successResponse({payment:updated,bookingStatus});
- }catch(err){if(err instanceof Error&&err.message==='UNAUTHORIZED_STAFF')return errorResponse('Staff access required','FORBIDDEN',403);console.error(err);return errorResponse('Unable to verify payment','INTERNAL_ERROR',500);}
+ }catch(err){if(err instanceof Error&&err.message==='UNAUTHORIZED_ADMIN')return errorResponse('Staff access required','FORBIDDEN',403);console.error(err);return errorResponse('Unable to verify payment','INTERNAL_ERROR',500);}
 }
