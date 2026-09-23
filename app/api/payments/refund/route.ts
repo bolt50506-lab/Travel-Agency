@@ -2,7 +2,7 @@ import { NextRequest } from 'next/server';
 import { z } from 'zod';
 import { successResponse, errorResponse, validateBody } from '@/lib/utils/api';
 import { supabaseAdmin } from '@/lib/supabase/server';
-import { requireStaff } from '@/lib/auth/server';
+import { requireAdmin } from '@/lib/auth/server';
 
 const schema=z.object({paymentId:z.string().uuid(),amount:z.number().positive().optional(),reason:z.string().min(1)});
 
@@ -21,5 +21,5 @@ export async function POST(req:NextRequest){
   await supabaseAdmin.from('bookings').update({status:'REFUND_PROCESSING',updated_at:new Date().toISOString()}).eq('id',payment.booking_id);
   await supabaseAdmin.from('booking_status_history').insert({booking_id:payment.booking_id,status:'REFUND_PROCESSING',description:'Refund processing initiated: '+input.reason,changed_by:actor.id});
   return successResponse({refund});
- }catch(err){if(err instanceof Error&&err.message==='UNAUTHORIZED_STAFF')return errorResponse('Staff access required','FORBIDDEN',403);console.error(err);return errorResponse('Unable to process refund','INTERNAL_ERROR',500);}
+ }catch(err){if(err instanceof Error&&err.message==='UNAUTHORIZED_ADMIN')return errorResponse('Staff access required','FORBIDDEN',403);console.error(err);return errorResponse('Unable to process refund','INTERNAL_ERROR',500);}
 }
