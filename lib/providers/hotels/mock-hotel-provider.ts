@@ -165,7 +165,7 @@ export class MockHotelProvider implements IHotelProvider {
     }
 
     if (seededRandom(seed + 200) < 0.2) {
-      const oldPrice = 100 + Math.floor(seededRandom(seed) * 400);
+      const oldPrice = 20000 + Math.floor(seededRandom(seed) * 80000);
       const newPrice = Math.round(oldPrice * (1 + (seededRandom(seed + 300) - 0.4) * 0.15));
       return {
         valid: true,
