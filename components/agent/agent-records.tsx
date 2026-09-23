@@ -12,7 +12,7 @@ const formFields: Record<AgentModule, Field[]> = {
   customers: [{key:'full_name',label:'Full name'},{key:'email',label:'Email'},{key:'phone',label:'Phone'},{key:'cnic',label:'CNIC'},{key:'passport_number',label:'Passport number'},{key:'passport_expiry',label:'Passport expiry',type:'date'},{key:'nationality',label:'Nationality'},{key:'city',label:'City'}],
   travelers: [{key:'customer_id',label:'Customer',type:'select'},{key:'first_name',label:'First name'},{key:'last_name',label:'Last name'},{key:'date_of_birth',label:'Date of birth',type:'date'},{key:'gender',label:'Gender'},{key:'nationality',label:'Nationality'},{key:'passport_number',label:'Passport number'},{key:'passport_expiry',label:'Passport expiry',type:'date'},{key:'relationship',label:'Relationship'}],
   quotations: [{key:'customer_id',label:'Customer',type:'select'},{key:'service_type',label:'Service',type:'select'},{key:'title',label:'Title'},{key:'supplier_cost',label:'Supplier cost (PKR)',type:'number'},{key:'subtotal',label:'Selling subtotal (PKR)',type:'number'},{key:'discount',label:'Discount (PKR)',type:'number'},{key:'taxes',label:'Taxes (PKR)',type:'number'},{key:'valid_until',label:'Valid until',type:'date'},{key:'notes',label:'Notes'}],
-  bookings: [{key:'customer_id',label:'Customer',type:'select'},{key:'type',label:'Type',type:'select'},{key:'contact_email',label:'Contact email'},{key:'contact_phone',label:'Contact phone'},{key:'supplier_cost',label:'Supplier cost (PKR)',type:'number'},{key:'total_amount',label:'Selling price (PKR)',type:'number'},{key:'taxes',label:'Taxes (PKR)',type:'number'},{key:'fees',label:'Service fees (PKR)',type:'number'},{key:'discount',label:'Discount (PKR)',type:'number'},{key:'supplier_name',label:'Supplier'},{key:'notes',label:'Notes'}], payments: [], commissions: []
+  bookings: [{key:'customer_id',label:'Customer',type:'select'},{key:'type',label:'Type',type:'select'},{key:'contact_email',label:'Contact email'},{key:'contact_phone',label:'Contact phone'},{key:'supplier_cost',label:'Supplier cost (PKR)',type:'number'},{key:'total_amount',label:'Selling price (PKR)',type:'number'},{key:'taxes',label:'Taxes (PKR)',type:'number'},{key:'fees',label:'Service fees (PKR)',type:'number'},{key:'discount',label:'Discount (PKR)',type:'number'},{key:'supplier_name',label:'Supplier'},{key:'notes',label:'Notes'}], payments: [{key:'booking_id',label:'Booking',type:'select'},{key:'method',label:'Payment method',type:'select'},{key:'amount',label:'Amount (PKR)',type:'number'},{key:'paymentReference',label:'Payment reference'}], commissions: []
 };
 
 const displayFields: Record<AgentModule,string[]> = {
@@ -29,6 +29,7 @@ const titles: Record<AgentModule,string> = {customers:'Customers',travelers:'Tra
 export default function AgentRecords({ module }: { module: AgentModule }) {
   const [rows,setRows]=useState<any[]>([]);
   const [customers,setCustomers]=useState<any[]>([]);
+  const [bookings,setBookings]=useState<any[]>([]);
   const [form,setForm]=useState<Record<string,string>>({});
   const [loading,setLoading]=useState(true);
   const [saving,setSaving]=useState(false);
@@ -40,7 +41,7 @@ export default function AgentRecords({ module }: { module: AgentModule }) {
       const response=await fetch('/api/agent/modules?module='+encodeURIComponent(module));
       const result=await response.json();
       if(!response.ok) throw new Error(result.error||'Unable to load module');
-      setRows(result.rows||[]); setCustomers(result.meta?.customers||[]);
+      setRows(result.rows||[]); setCustomers(result.meta?.customers||[]); setBookings(result.meta?.bookings||[]);
     } catch(e) { setError(e instanceof Error?e.message:'Unable to load module'); }
     finally { setLoading(false); }
   }
@@ -52,8 +53,11 @@ export default function AgentRecords({ module }: { module: AgentModule }) {
     try {
       const payload = module === 'bookings'
         ? { module, data: { ...form, totalAmount: { amount: Number(form.total_amount || 0), currency: 'PKR' }, supplierCost: Number(form.supplier_cost || 0), taxes: Number(form.taxes || 0), fees: Number(form.fees || 0), discount: Number(form.discount || 0) } }
-        : { module, data: form };
-      const response=await fetch(module === 'bookings' ? '/api/bookings' : '/api/agent/modules',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+        : module === 'payments'
+          ? { bookingReference: bookings.find((booking) => booking.id === form.booking_id)?.reference, amount: { amount: Number(form.amount || 0), currency: 'PKR' }, method: form.method, paymentReference: form.paymentReference }
+          : { module, data: form };
+      const endpoint = module === 'bookings' ? '/api/bookings' : module === 'payments' ? '/api/payments/create' : '/api/agent/modules';
+      const response=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
       const result=await response.json();
       if(!response.ok) throw new Error(result.error||'Unable to save');
       setForm({}); await load();
@@ -74,7 +78,7 @@ export default function AgentRecords({ module }: { module: AgentModule }) {
       <div className="mb-4 flex items-center gap-2"><Plus className="h-4 w-4"/><h2 className="font-semibold">Add record</h2></div>
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {fields.map(field=><label key={field.key} className="text-sm"><span className="mb-1 block text-muted-foreground">{field.label}</span>
-          {field.type==='select'?<select className="h-10 w-full rounded-md border bg-background px-3" value={form[field.key]||''} onChange={e=>setForm({...form,[field.key]:e.target.value})}><option value="">{field.key==='type'||field.key==='service_type'?'Select type':'Select customer'}</option>{field.key==='type'?<><option value="flight">Flight</option><option value="hotel">Hotel</option></>:field.key==='service_type'?<><option value="flight">Flight</option><option value="hotel">Hotel</option><option value="package">Package</option><option value="visa">Visa</option><option value="insurance">Insurance</option></>:customers.map(c=><option key={c.id} value={c.id}>{c.full_name}</option>)}</select>
+          {field.type==='select'?<select className="h-10 w-full rounded-md border bg-background px-3" value={form[field.key]||''} onChange={e=>setForm({...form,[field.key]:e.target.value})}><option value="">{field.key==='type'||field.key==='service_type'||field.key==='method'?'Select option':'Select customer'}</option>{field.key==='type'?<><option value="flight">Flight</option><option value="hotel">Hotel</option></>:field.key==='service_type'?<><option value="flight">Flight</option><option value="hotel">Hotel</option><option value="package">Package</option><option value="visa">Visa</option><option value="insurance">Insurance</option></>:field.key==='method'?<><option value="bank_transfer">Bank transfer</option><option value="raast">Raast</option><option value="jazzcash">JazzCash</option><option value="easypaisa">Easypaisa</option><option value="manual">Manual</option></>:field.key==='booking_id'?bookings.map(b=><option key={b.id} value={b.id}>{b.reference} · PKR {Number(b.customer_price||0).toLocaleString()}</option>):customers.map(c=><option key={c.id} value={c.id}>{c.full_name}</option>)}</select>
           :<input className="h-10 w-full rounded-md border bg-background px-3" type={field.type||'text'} value={form[field.key]||''} onChange={e=>setForm({...form,[field.key]:e.target.value})}/>}
         </label>)}
       </div>
