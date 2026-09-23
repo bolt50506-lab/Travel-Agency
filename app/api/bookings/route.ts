@@ -141,7 +141,23 @@ export async function POST(req: NextRequest) {
       : body.contactEmail.split('@')[0];
 
     const agent = actor.role === 'agent' ? await requireAgentRecord(actor.id) : null;
-    const customer = await findCustomer(actor.id, body.contactEmail, body.contactPhone, customerName, !!agent);
+    let customer;
+    if (agent && body.customerId) {
+      const { data: selectedCustomer } = await supabaseAdmin
+        .from('customers')
+        .select('*')
+        .eq('id', String(body.customerId))
+        .eq('created_by', actor.id)
+        .maybeSingle();
+      if (!selectedCustomer) return errorResponse('Customer is not assigned to this agent', 'FORBIDDEN', 403);
+      customer = selectedCustomer;
+    } else {
+      customer = await findCustomer(actor.id, body.contactEmail, body.contactPhone, customerName, !!agent);
+    }
+
+    const agentContactEmail = body.contactEmail || customer.email || 'no-email@customer.local';
+    const agentContactPhone = body.contactPhone || customer.phone || 'N/A';
+    if (!agentContactEmail || !agentContactPhone) return errorResponse('Customer contact details are required', 'VALIDATION_ERROR', 400);
 
     const supplierCost = Number(body.supplierCost ?? details.supplierCost ?? 0);
     const requestedPrice = Number(body.totalAmount?.amount ?? 0);
@@ -183,8 +199,8 @@ export async function POST(req: NextRequest) {
       status: 'BOOKING_REQUESTED',
       customer_id: customer.id,
       ...(agent ? { agent_id: agent.id, agency_id: agent.agency_id || null } : {}),
-      contact_email: body.contactEmail,
-      contact_phone: body.contactPhone,
+      contact_email: agentContactEmail,
+      contact_phone: agentContactPhone,
       supplier_cost: pricing.supplierCost,
       agency_markup: pricing.markup,
       taxes: pricing.taxes,
