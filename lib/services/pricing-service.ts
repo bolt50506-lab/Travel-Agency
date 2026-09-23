@@ -38,6 +38,10 @@ function sealPricingSnapshot(snapshot: { supplierCost: number; taxes: number; cu
   return Buffer.concat([iv, tag, encrypted]).toString('base64url');
 }
 
+export function sealRevalidationToken(pricing: { supplierCost: number; taxes: number; customerPrice: number }) {
+  return sealPricingSnapshot({ supplierCost: pricing.supplierCost, taxes: pricing.taxes, customerPrice: pricing.customerPrice, expiresAt: Date.now() + 15 * 60 * 1000 });
+}
+
 export function openPricingSnapshot(token: string) {
   try {
     const raw = Buffer.from(token, 'base64url');
