@@ -159,7 +159,10 @@ export async function POST(req: NextRequest) {
     const agentContactPhone = body.contactPhone || customer.phone || 'N/A';
     if (!agentContactEmail || !agentContactPhone) return errorResponse('Customer contact details are required', 'VALIDATION_ERROR', 400);
 
-    const supplierCost = Number(body.supplierCost ?? details.supplierCost ?? 0);
+    const inferredSupplierCost = body.type === 'flight'
+      ? Number(details.basePrice?.amount || 0)
+      : Math.max(0, Number(details.room?.totalPrice?.amount || 0) - Number(details.room?.taxesAndFees?.amount || 0));
+    const supplierCost = Number(body.supplierCost ?? details.supplierCost ?? inferredSupplierCost);
     const requestedPrice = Number(body.totalAmount?.amount ?? 0);
     const currency = String(body.totalAmount?.currency || 'PKR').toUpperCase();
     if (currency !== 'PKR') return errorResponse('Only PKR bookings are supported', 'CURRENCY_NOT_SUPPORTED', 400);
@@ -167,7 +170,10 @@ export async function POST(req: NextRequest) {
     if (!Number.isFinite(requestedPrice) || requestedPrice <= 0) return errorResponse('A positive booking amount is required', 'VALIDATION_ERROR', 400);
     if (supplierCost > requestedPrice) return errorResponse('Selling price cannot be below supplier cost', 'PRICE_BELOW_COST', 409);
 
-    const taxes = Number(body.taxes || 0);
+    const inferredTaxes = body.type === 'flight'
+      ? Number(details.taxesAndFees?.amount || 0)
+      : Number(details.room?.taxesAndFees?.amount || 0);
+    const taxes = Number(body.taxes ?? inferredTaxes ?? 0);
     const fees = Number(body.fees || 0);
     const discount = Number(body.discount || 0);
     if (![taxes, fees, discount].every(Number.isFinite) || taxes < 0 || fees < 0 || discount < 0) {
