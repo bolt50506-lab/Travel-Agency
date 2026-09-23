@@ -4,7 +4,6 @@ import { NextRequest } from 'next/server';
 import { randomUUID } from 'crypto';
 import path from 'path';
 import { mkdir, writeFile } from 'fs/promises';
-import { requireAdmin } from '@/lib/auth/server';
 import { requireAgentRecord } from '@/lib/auth/agent';
 import { getServerActor } from '@/lib/auth/server';
 import { supabaseAdmin } from '@/lib/supabase/server';
