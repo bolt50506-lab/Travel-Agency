@@ -442,7 +442,7 @@ export default function FulfillmentPage() {
                         <div key={doc.id} className="flex items-center justify-between rounded-md border border-border p-2 text-sm">
                           <div className="flex items-center gap-2">
                             <FileText className="h-4 w-4 text-muted-foreground" />
-                            <span>{doc.filename}</span>
+                            <a href={`/api/documents/${doc.id}`} target="_blank" rel="noreferrer" className="font-medium hover:underline">{doc.filename}</a>
                             <Badge variant="outline" className="text-xs">{doc.type}</Badge>
                           </div>
                           <Badge variant={doc.customerVisible ? 'default' : 'secondary'}>
