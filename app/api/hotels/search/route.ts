@@ -44,7 +44,12 @@ export async function GET(req: NextRequest) {
     }
 
     const result = await hotelService.searchHotels(validation.data);
-    return successResponse(result);
+    const rules = await getActivePricingRules();
+    const offers = await Promise.all(result.offers.map(async (hotel) => {
+      const rooms = await Promise.all(hotel.rooms.map((room) => priceHotelRoom(room, hotel, rules)));
+      return { ...hotel, rooms, startingPrice: { amount: Math.min(...rooms.map((room) => Number(room.totalPrice?.amount || 0))), currency: 'PKR' } };
+    }));
+    return successResponse({ ...result, offers });
   } catch (err) {
     console.error('Hotel search error:', err);
     return errorResponse('Something went wrong while searching hotels', 'INTERNAL_ERROR', 500);
