@@ -4,6 +4,7 @@ import { NextRequest } from 'next/server';
 import { successResponse, errorResponse } from '@/lib/utils/api';
 import { supabaseAdmin } from '@/lib/supabase/server';
 import { getServerActor } from '@/lib/auth/server';
+import { requireAgentRecord } from '@/lib/auth/agent';
 
 export async function POST(
   _req: NextRequest,
@@ -28,6 +29,12 @@ export async function POST(
       if (!customer.data || customer.data.id !== booking.customer_id) {
         return errorResponse('Booking not found', 'NOT_FOUND', 404);
       }
+    } else if (actor.role === 'agent') {
+      const agent = await requireAgentRecord(actor.id);
+      const { data: owned } = await supabaseAdmin.from('bookings').select('id').eq('id', booking.id).eq('agent_id', agent.id).maybeSingle();
+      if (!owned) return errorResponse('Booking not found', 'NOT_FOUND', 404);
+    } else if (actor.role !== 'admin') {
+      return errorResponse('Forbidden', 'FORBIDDEN', 403);
     }
 
     if (['CANCELLED', 'REFUNDED', 'TICKETED', 'VOUCHER_ISSUED', 'COMPLETED'].includes(booking.status)) {
@@ -35,9 +42,11 @@ export async function POST(
     }
 
     const now = new Date().toISOString();
+    const { data: verifiedPayment } = await supabaseAdmin.from('payments').select('id,status').eq('booking_id', booking.id).eq('status', 'verified').limit(1).maybeSingle();
+    const nextStatus = actor.role === 'customer' && verifiedPayment ? 'REFUND_REQUESTED' : 'CANCELLED';
     const updated = await supabaseAdmin
       .from('bookings')
-      .update({ status: 'CANCELLED', updated_at: now })
+      .update({ status: nextStatus, updated_at: now })
       .eq('id', booking.id)
       .select('*')
       .single();
@@ -46,10 +55,10 @@ export async function POST(
 
     const history = await supabaseAdmin.from('booking_status_history').insert({
       booking_id: booking.id,
-      status: 'CANCELLED',
-      description: actor.role === 'customer' ? 'Booking cancelled by customer' : 'Booking cancelled by agency staff',
+      status: nextStatus,
+      description: nextStatus === 'REFUND_REQUESTED' ? 'Customer requested cancellation after payment; agency refund review required' : (actor.role === 'customer' ? 'Booking cancelled by customer' : 'Booking cancelled by agency staff'),
       changed_by: actor.id,
-      metadata: { source: 'booking_cancel' },
+      metadata: { source: 'booking_cancel', refundRequested: nextStatus === 'REFUND_REQUESTED' },
     });
     if (history.error) console.error('Cancel history warning:', history.error);
 
@@ -62,7 +71,7 @@ export async function POST(
       id: updated.data.id,
       reference: updated.data.reference,
       status: updated.data.status,
-      message: 'Booking cancelled successfully',
+      message: nextStatus === 'REFUND_REQUESTED' ? 'Cancellation request received. The agency will review and process the refund.' : 'Booking cancelled successfully',
     });
   } catch (err) {
     console.error('Cancel booking error:', err);
