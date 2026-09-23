@@ -33,17 +33,20 @@ export default function Home() {
         <div className="absolute inset-0 opacity-20" style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,.08) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.08) 1px, transparent 1px)', backgroundSize: '48px 48px' }} />
 
         <div className="relative container-page py-14 md:py-20 lg:py-24">
-          <div className="max-w-3xl animate-in fade-in slide-in-from-bottom-3 duration-700">
-            <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-xs font-medium text-white/85 backdrop-blur">
-              <Sparkles className="h-3.5 w-3.5 text-cyan-300" />
-              Search, compare and book with a real agency workflow
+          <div className="max-w-4xl animate-in fade-in slide-in-from-bottom-3 duration-700">
+            <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-amber-300/35 bg-slate-950/45 px-4 py-2 text-sm font-semibold tracking-wide text-amber-200 shadow-lg shadow-black/10 backdrop-blur-md">
+              <Sparkles className="h-4 w-4 text-amber-300" />
+              <span>Search, compare and book with a real agency workflow</span>
             </div>
-            <h1 className="max-w-3xl text-4xl font-black tracking-tight text-white md:text-6xl lg:text-7xl">
-              Your next trip,
-              <span className="block bg-gradient-to-r from-cyan-300 via-sky-200 to-white bg-clip-text text-transparent">made effortless.</span>
+            <h1 className="max-w-4xl text-5xl font-black leading-[0.98] tracking-[-0.04em] text-white drop-shadow-2xl sm:text-6xl md:text-7xl lg:text-[5.5rem]">
+              Travel made
+              <span className="block bg-gradient-to-r from-amber-200 via-yellow-100 to-white bg-clip-text pb-2 font-serif italic font-bold text-transparent">
+                personal.
+              </span>
             </h1>
-            <p className="mt-5 max-w-2xl text-base leading-7 text-white/70 md:text-lg">
-              Find flights and hotels, lock in the details, submit payment securely, and let your travel team handle the fulfillment.
+            <div className="mt-6 h-px w-24 bg-gradient-to-r from-amber-300 to-transparent" />
+            <p className="mt-5 max-w-2xl text-base font-medium leading-7 text-white/80 md:text-lg">
+              Search flights and hotels, compare options, secure your booking, and let our travel team handle the journey from booking to fulfillment.
             </p>
           </div>
 
