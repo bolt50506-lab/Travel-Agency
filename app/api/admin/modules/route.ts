@@ -58,14 +58,25 @@ export async function POST(req: NextRequest) {
     const cfg = configs[body.module];
     if (!cfg) return errorResponse('Unknown module', 'MODULE_NOT_FOUND', 404);
     const values = sanitize(body.data || {}, cfg.fields);
+    if (body.module === 'pricing_rules') {
+      values.created_by = actor.id;
+    }
     if (body.module === 'quotations' && !values.reference) values.reference = 'QT-' + new Date().getFullYear() + '-' + Math.random().toString(36).slice(2, 8).toUpperCase();
     const { data, error } = await supabaseAdmin.from(cfg.table).insert(values).select('*').single();
-    if (error) throw error;
+    if (error) {
+      console.error('Admin module create failed:', error);
+      return errorResponse(
+        error.message || 'Unable to create record',
+        'CREATE_FAILED',
+        error.code === '23505' ? 409 : error.code === '23503' ? 409 : 500,
+        { code: error.code, details: error.details, hint: error.hint }
+      );
+    }
     await supabaseAdmin.from('audit_logs').insert({ user_id: actor.id, action: 'CREATE', entity_type: cfg.table, entity_id: data.id, new_value: data });
     return successResponse(data, 201);
   } catch (err) {
     console.error(err);
-    return errorResponse('Unable to create record', 'CREATE_FAILED', 500);
+    return errorResponse(err instanceof Error ? err.message : 'Unable to create record', 'CREATE_FAILED', 500);
   }
 }
 
