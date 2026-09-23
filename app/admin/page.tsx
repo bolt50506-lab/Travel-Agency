@@ -1,11 +1,12 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { BookOpen, Plane, BedDouble, Banknote, CreditCard, RefreshCw, Calendar, TrendingUp, ClipboardList, Percent } from 'lucide-react';
+import { BookOpen, Plane, BedDouble, Banknote, CreditCard, RefreshCw, Calendar, TrendingUp, ClipboardList, Percent, AlertCircle } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Button } from '@/components/ui/button';
 import { formatPrice } from '@/lib/utils/api';
 import {
   ResponsiveContainer,
@@ -45,30 +46,61 @@ interface DashboardData {
 export default function AdminDashboardPage() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  async function loadDashboard() {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch('/api/admin/dashboard', { cache: 'no-store' });
+      const payload = await res.json().catch(() => ({}));
+      if (!res.ok || !payload?.cards || !payload?.charts) {
+        throw new Error(payload?.error || 'Unable to load dashboard data');
+      }
+      setData(payload);
+    } catch (err) {
+      setData(null);
+      setError(err instanceof Error ? err.message : 'Unable to load dashboard data');
+    } finally {
+      setLoading(false);
+    }
+  }
 
   useEffect(() => {
-    fetch('/api/admin/dashboard')
-      .then((res) => res.json())
-      .then((d) => {
-        setData(d);
-        setLoading(false);
-      })
-      .catch(() => setLoading(false));
+    loadDashboard();
   }, []);
 
-  if (loading || !data) {
+  if (loading) {
     return (
       <div>
         <h1 className="text-2xl font-bold mb-6">Dashboard</h1>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {[1, 2, 3, 4].map((i) => (
-            <Skeleton key={i} className="h-28 rounded-lg" />
-          ))}
+          {[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-28 rounded-lg" />)}
         </div>
         <div className="mt-6 grid gap-4 lg:grid-cols-2">
           <Skeleton className="h-64 rounded-lg" />
           <Skeleton className="h-64 rounded-lg" />
         </div>
+      </div>
+    );
+  }
+
+  if (error || !data) {
+    return (
+      <div className="space-y-4">
+        <h1 className="text-2xl font-bold">Dashboard</h1>
+        <Card className="border-destructive/30 bg-destructive/5 p-6">
+          <div className="flex items-start gap-3">
+            <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-destructive" />
+            <div>
+              <h2 className="font-semibold">Dashboard data could not be loaded</h2>
+              <p className="mt-1 text-sm text-muted-foreground">{error || 'Please try again.'}</p>
+              <Button className="mt-4" onClick={loadDashboard}>
+                <RefreshCw className="mr-2 h-4 w-4" /> Retry
+              </Button>
+            </div>
+          </div>
+        </Card>
       </div>
     );
   }
@@ -112,10 +144,7 @@ export default function AdminDashboardPage() {
 
       <div className="mt-6 grid gap-4 lg:grid-cols-2">
         <Card className="p-4">
-          <h3 className="text-sm font-semibold mb-4 flex items-center gap-2">
-            <TrendingUp className="h-4 w-4" />
-            Bookings Over Time
-          </h3>
+          <h3 className="text-sm font-semibold mb-4 flex items-center gap-2"><TrendingUp className="h-4 w-4" />Bookings Over Time</h3>
           <ResponsiveContainer width="100%" height={240}>
             <BarChart data={data.charts.bookingsOverTime}>
               <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
@@ -128,10 +157,7 @@ export default function AdminDashboardPage() {
         </Card>
 
         <Card className="p-4">
-          <h3 className="text-sm font-semibold mb-4 flex items-center gap-2">
-            <Banknote className="h-4 w-4" />
-            Revenue Over Time
-          </h3>
+          <h3 className="text-sm font-semibold mb-4 flex items-center gap-2"><Banknote className="h-4 w-4" />Revenue Over Time</h3>
           <ResponsiveContainer width="100%" height={240}>
             <LineChart data={data.charts.revenueOverTime}>
               <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
@@ -158,9 +184,7 @@ export default function AdminDashboardPage() {
                 outerRadius={80}
                 label={(entry) => `${entry.name}: ${entry.value}`}
               >
-                {data.charts.flightVsHotel.map((_, i) => (
-                  <Cell key={i} fill={pieColors[i % pieColors.length]} />
-                ))}
+                {data.charts.flightVsHotel.map((_, i) => <Cell key={i} fill={pieColors[i % pieColors.length]} />)}
               </Pie>
               <Tooltip />
             </PieChart>
@@ -179,15 +203,15 @@ export default function AdminDashboardPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-            {(data.recent || []).map((booking) => (
-              <TableRow key={booking.id}>
-                <TableCell className="font-medium">{booking.reference}</TableCell>
-                <TableCell className="capitalize">{booking.type}</TableCell>
-                <TableCell><Badge variant="secondary">{booking.status}</Badge></TableCell>
-                <TableCell className="text-right font-medium">{formatPrice(Number(booking.customer_price || 0), booking.currency || 'PKR')}</TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
+              {(data.recent || []).map((booking) => (
+                <TableRow key={booking.id}>
+                  <TableCell className="font-medium">{booking.reference}</TableCell>
+                  <TableCell className="capitalize">{booking.type}</TableCell>
+                  <TableCell><Badge variant="secondary">{booking.status}</Badge></TableCell>
+                  <TableCell className="text-right font-medium">{formatPrice(Number(booking.customer_price || 0), booking.currency || 'PKR')}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
           </Table>
         </Card>
       </div>
