@@ -75,9 +75,11 @@ export async function POST(req: NextRequest) {
     }
 
     const token = createSessionToken({ id: account.id, email, role: 'customer' });
+    const forwardedProto = req.headers.get('x-forwarded-proto')?.split(',')[0]?.trim().toLowerCase();
+    const isSecureRequest = forwardedProto === 'https' || req.nextUrl.protocol === 'https:';
     cookies().set('voyago_access_token', token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
+      secure: isSecureRequest,
       sameSite: 'lax',
       path: '/',
       maxAge: 7 * 24 * 60 * 60,
