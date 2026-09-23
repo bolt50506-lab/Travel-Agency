@@ -34,7 +34,7 @@ export default function Home() {
 
         <div className="relative container-page py-14 md:py-20 lg:py-24">
           <div className="max-w-4xl animate-in fade-in slide-in-from-bottom-3 duration-700">
-            <div className="mb-6 inline-flex items-center gap-2 rounded-full border-2 border-white bg-orange-500 px-4 py-2.5 text-sm font-extrabold tracking-wide text-white shadow-2xl shadow-black/40 ring-2 ring-orange-300/40">
+            <div className="mb-6 inline-flex items-center gap-2 rounded-full border-2 border-white bg-[#e6391f] px-5 py-3 text-sm font-black tracking-wide text-white shadow-[0_10px_30px_rgba(0,0,0,0.45)] ring-4 ring-white/30">
               <Sparkles className="h-4 w-4 text-orange-500" />
               <span>Search, compare and book with a real agency workflow</span>
             </div>
