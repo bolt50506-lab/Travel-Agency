@@ -58,7 +58,7 @@ function generateRooms(seed: number, nights: number): HotelRoom[] {
   for (let i = 0; i < numRooms; i++) {
     const roomSeed = seed + i * 97;
     const rt = roomTypes[i % roomTypes.length];
-    const pricePerNight = 80 + Math.floor(seededRandom(roomSeed) * 400);
+    const pricePerNight = 18000 + Math.floor(seededRandom(roomSeed) * 72000);
     const taxes = Math.round(pricePerNight * nights * 0.12);
     const total = pricePerNight * nights + taxes;
 
@@ -74,9 +74,9 @@ function generateRooms(seed: number, nights: number): HotelRoom[] {
         ? 'Free cancellation up to 48 hours before check-in'
         : 'Non-refundable',
       refundable: seededRandom(roomSeed + 50) > 0.4,
-      pricePerNight: { amount: pricePerNight, currency: 'USD' },
-      totalPrice: { amount: total, currency: 'USD' },
-      taxesAndFees: { amount: taxes, currency: 'USD' },
+      pricePerNight: { amount: pricePerNight, currency: 'PKR' },
+      totalPrice: { amount: total, currency: 'PKR' },
+      taxesAndFees: { amount: taxes, currency: 'PKR' },
       roomsAvailable: Math.floor(seededRandom(roomSeed + 60) * 10) + 1,
     });
   }
@@ -140,7 +140,7 @@ export class MockHotelProvider implements IHotelProvider {
         checkInTime: '14:00',
         checkOutTime: '12:00',
         rooms,
-        startingPrice: { amount: startingPrice, currency: 'USD' },
+        startingPrice: { amount: startingPrice, currency: 'PKR' },
         provider: this.name,
         validUntil: new Date(Date.now() + 30 * 60000).toISOString(),
       });
@@ -165,13 +165,13 @@ export class MockHotelProvider implements IHotelProvider {
     }
 
     if (seededRandom(seed + 200) < 0.2) {
-      const oldPrice = 100 + Math.floor(seededRandom(seed) * 400);
+      const oldPrice = 20000 + Math.floor(seededRandom(seed) * 80000);
       const newPrice = Math.round(oldPrice * (1 + (seededRandom(seed + 300) - 0.4) * 0.15));
       return {
         valid: true,
         priceChanged: true,
-        oldPrice: { amount: oldPrice, currency: 'USD' },
-        newPrice: { amount: newPrice, currency: 'USD' },
+        oldPrice: { amount: oldPrice, currency: 'PKR' },
+        newPrice: { amount: newPrice, currency: 'PKR' },
         roomsAvailable: true,
       };
     }
@@ -200,9 +200,9 @@ export class MockHotelProvider implements IHotelProvider {
           amenities: [],
           cancellationPolicy: '',
           refundable: false,
-          pricePerNight: { amount: 0, currency: 'USD' },
-          totalPrice: { amount: 0, currency: 'USD' },
-          taxesAndFees: { amount: 0, currency: 'USD' },
+          pricePerNight: { amount: 0, currency: 'PKR' },
+          totalPrice: { amount: 0, currency: 'PKR' },
+          taxesAndFees: { amount: 0, currency: 'PKR' },
           roomsAvailable: 0,
         },
         checkIn: '',
@@ -226,9 +226,9 @@ export class MockHotelProvider implements IHotelProvider {
         amenities: [],
         cancellationPolicy: '',
         refundable: true,
-        pricePerNight: { amount: 0, currency: 'USD' },
-        totalPrice: { amount: 0, currency: 'USD' },
-        taxesAndFees: { amount: 0, currency: 'USD' },
+        pricePerNight: { amount: 0, currency: 'PKR' },
+        totalPrice: { amount: 0, currency: 'PKR' },
+        taxesAndFees: { amount: 0, currency: 'PKR' },
         roomsAvailable: 1,
       },
       checkIn: '',

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { BookOpen, Plane, BedDouble, DollarSign, CreditCard, RefreshCw, Calendar, TrendingUp, ClipboardList, Percent } from 'lucide-react';
+import { BookOpen, Plane, BedDouble, Banknote, CreditCard, RefreshCw, Calendar, TrendingUp, ClipboardList, Percent } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
@@ -78,7 +78,7 @@ export default function AdminDashboardPage() {
     { label: "Today's Bookings", value: data.cards.todayBookings, icon: Calendar, color: 'text-green-600 bg-green-50' },
     { label: 'Flight Bookings', value: data.cards.flightBookings, icon: Plane, color: 'text-cyan-600 bg-cyan-50' },
     { label: 'Hotel Bookings', value: data.cards.hotelBookings, icon: BedDouble, color: 'text-amber-600 bg-amber-50' },
-    { label: 'Revenue', value: formatPrice(data.cards.revenue), icon: DollarSign, color: 'text-emerald-600 bg-emerald-50' },
+    { label: 'Revenue', value: formatPrice(data.cards.revenue), icon: Banknote, color: 'text-emerald-600 bg-emerald-50' },
     { label: 'Gross Margin', value: formatPrice(data.cards.grossMargin), icon: Percent, color: 'text-violet-600 bg-violet-50' },
     { label: 'Fulfillment Pending', value: data.cards.fulfillmentPending, icon: ClipboardList, color: 'text-indigo-600 bg-indigo-50' },
     { label: 'Pending Payments', value: data.cards.pendingPayments, icon: CreditCard, color: 'text-orange-600 bg-orange-50' },
@@ -129,7 +129,7 @@ export default function AdminDashboardPage() {
 
         <Card className="p-4">
           <h3 className="text-sm font-semibold mb-4 flex items-center gap-2">
-            <DollarSign className="h-4 w-4" />
+            <Banknote className="h-4 w-4" />
             Revenue Over Time
           </h3>
           <ResponsiveContainer width="100%" height={240}>

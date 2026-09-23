@@ -29,6 +29,8 @@ export default function FlightCheckoutPage() {
   const [contactPhone, setContactPhone] = useState('');
   const [bookingResult, setBookingResult] = useState<{ reference: string; status: string } | null>(null);
   const [paymentProcessing, setPaymentProcessing] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState<'raast' | 'jazzcash' | 'easypaisa' | 'bank_transfer'>('raast');
+  const [paymentReference, setPaymentReference] = useState('');
 
   const offerId = searchParams.get('offerId') || '';
   const origin = searchParams.get('origin') || '';
@@ -166,7 +168,8 @@ export default function FlightCheckoutPage() {
         body: JSON.stringify({
           bookingReference: bookData.reference,
           amount: offer!.totalPrice,
-          method: 'bank_transfer',
+          method: paymentMethod,
+          paymentReference,
         }),
       });
       const paymentData = await paymentRes.json();
@@ -383,28 +386,27 @@ export default function FlightCheckoutPage() {
               <Card className="p-4">
                 <div className="flex items-center gap-2 mb-4">
                   <CreditCard className="h-5 w-5 text-primary" />
-                  <h3 className="text-sm font-semibold">Payment Method</h3>
+                  <h3 className="text-sm font-semibold">Pakistan Payment Method</h3>
                 </div>
-                <div className="space-y-3">
-                  <div className="space-y-1.5">
-                    <Label htmlFor="cardName">Payment method</Label>
-                    <Input id="cardName" defaultValue="John Smith" placeholder="Your selected payment method" />
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="space-y-1.5 sm:col-span-2">
+                    <Label htmlFor="flightPaymentMethod">Choose payment method</Label>
+                    <Select value={paymentMethod} onValueChange={(v) => setPaymentMethod(v as typeof paymentMethod)}>
+                      <SelectTrigger id="flightPaymentMethod"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="raast">Raast</SelectItem>
+                        <SelectItem value="jazzcash">JazzCash</SelectItem>
+                        <SelectItem value="easypaisa">Easypaisa</SelectItem>
+                        <SelectItem value="bank_transfer">Bank Transfer</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
-                  <div className="space-y-1.5">
-                    <Label htmlFor="cardNumber">Bank / Raast / JazzCash / Easypaisa</Label>
-                    <Input id="cardNumber" defaultValue="4111 1111 1111 1111" placeholder="Payment reference (optional)" />
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="space-y-1.5">
-                      <Label htmlFor="expiry">Expiry Date</Label>
-                      <Input id="expiry" defaultValue="12/27" placeholder="MM/YY" />
-                    </div>
-                    <div className="space-y-1.5">
-                      <Label htmlFor="cvv">CVV</Label>
-                      <Input id="cvv" defaultValue="123" placeholder="123" type="password" />
-                    </div>
+                  <div className="space-y-1.5 sm:col-span-2">
+                    <Label htmlFor="flightPaymentReference">Payment reference</Label>
+                    <Input id="flightPaymentReference" value={paymentReference} onChange={(e) => setPaymentReference(e.target.value)} placeholder="Enter transaction/reference number after payment" />
                   </div>
                 </div>
+                <p className="mt-3 text-xs text-muted-foreground">Payment is recorded in PKR and verified by the travel agency before ticketing or voucher issuance.</p>
               </Card>
 
               <div className="flex items-center gap-2 text-xs text-muted-foreground">

@@ -26,7 +26,7 @@ export default function HotelResultsPage() {
   const [filters, setFilters] = useState({
     starRating: {} as Record<number, boolean>,
     minRating: 0,
-    maxPrice: 2000,
+    maxPrice: 200000,
     amenities: {} as Record<string, boolean>,
   });
 
@@ -178,12 +178,12 @@ export default function HotelResultsPage() {
               </div>
 
               <div>
-                <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Max Price: ${filters.maxPrice}/night</Label>
+                <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Max Price: PKR ${filters.maxPrice.toLocaleString()}/night</Label>
                 <input
                   type="range"
-                  min={50}
-                  max={2000}
-                  step={50}
+                  min={2000}
+                  max={200000}
+                  step={2000}
                   value={filters.maxPrice}
                   onChange={(e) => setFilters({ ...filters, maxPrice: parseInt(e.target.value) })}
                   className="mt-2 w-full accent-primary"

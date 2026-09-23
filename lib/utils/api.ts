@@ -24,7 +24,7 @@ export function formatDuration(minutes: number): string {
   return `${h}h ${m}m`;
 }
 
-export function formatPrice(amount: number, currency = 'USD'): string {
+export function formatPrice(amount: number, currency = 'PKR'): string {
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency,

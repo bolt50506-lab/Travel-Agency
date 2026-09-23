@@ -23,7 +23,7 @@ export async function POST(req: NextRequest) {
       booking_id:booking.id,customer_id:booking.customer_id,reference:paymentReference(),
       method:input.method,amount:Number(input.amount.amount),currency:input.amount.currency,
       status,provider_name:input.method==='card'?'manual_card':'manual',
-      provider_response:{mode:'manual_verification',actorId:actor?.id||null},
+      provider_response:{mode:'manual_verification',actorId:actor?.id||null,paymentReference:input.paymentReference||null},
     }).select('*').single();
     if(error)throw error;
 

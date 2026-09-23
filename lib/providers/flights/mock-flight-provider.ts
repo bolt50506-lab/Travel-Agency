@@ -140,7 +140,7 @@ function calculatePrice(cabinClass: CabinClass, stops: number, duration: number,
     cabinClass === 'business' ? 3 :
     4.5;
 
-  const baseFare = (200 + seededRandom(seed) * 800) * cabinMultiplier;
+  const baseFare = (55000 + seededRandom(seed) * 165000) * cabinMultiplier;
   const stopDiscount = stops > 0 ? 0.85 : 1;
   const durationFactor = 1 + duration / 10000;
   const base = Math.round(baseFare * stopDiscount * durationFactor);
@@ -188,9 +188,9 @@ export class MockFlightProvider implements IFlightProvider {
       offers.push({
         id: `offer-${offerSeed}`,
         segments,
-        totalPrice: { amount: price.total, currency: 'USD' },
-        basePrice: { amount: price.base, currency: 'USD' },
-        taxesAndFees: { amount: price.taxes, currency: 'USD' },
+        totalPrice: { amount: price.total, currency: 'PKR' },
+        basePrice: { amount: price.base, currency: 'PKR' },
+        taxesAndFees: { amount: price.taxes, currency: 'PKR' },
         stops,
         totalDuration,
         refundable: seededRandom(offerSeed + 20) > 0.5,
@@ -222,14 +222,14 @@ export class MockFlightProvider implements IFlightProvider {
     }
 
     if (seededRandom(seed + 200) < 0.25) {
-      const oldPrice = 500 + Math.floor(seededRandom(seed) * 1000);
+      const oldPrice = 65000 + Math.floor(seededRandom(seed) * 150000);
       const newPrice = Math.round(oldPrice * (1 + (seededRandom(seed + 300) - 0.4) * 0.2));
 
       return {
         valid: true,
         priceChanged: true,
-        oldPrice: { amount: oldPrice, currency: 'USD' },
-        newPrice: { amount: newPrice, currency: 'USD' },
+        oldPrice: { amount: oldPrice, currency: 'PKR' },
+        newPrice: { amount: newPrice, currency: 'PKR' },
         seatsAvailable: true,
       };
     }
@@ -255,9 +255,9 @@ export class MockFlightProvider implements IFlightProvider {
         offer: {
           id: request.offerId,
           segments: [],
-          totalPrice: { amount: 0, currency: 'USD' },
-          basePrice: { amount: 0, currency: 'USD' },
-          taxesAndFees: { amount: 0, currency: 'USD' },
+          totalPrice: { amount: 0, currency: 'PKR' },
+          basePrice: { amount: 0, currency: 'PKR' },
+          taxesAndFees: { amount: 0, currency: 'PKR' },
           stops: 0,
           totalDuration: 0,
           refundable: false,
@@ -277,9 +277,9 @@ export class MockFlightProvider implements IFlightProvider {
       offer: {
         id: request.offerId,
         segments: [],
-        totalPrice: { amount: 0, currency: 'USD' },
-        basePrice: { amount: 0, currency: 'USD' },
-        taxesAndFees: { amount: 0, currency: 'USD' },
+        totalPrice: { amount: 0, currency: 'PKR' },
+        basePrice: { amount: 0, currency: 'PKR' },
+        taxesAndFees: { amount: 0, currency: 'PKR' },
         stops: 0,
         totalDuration: 0,
         refundable: true,

@@ -56,7 +56,7 @@ export class MockPaymentProvider implements IPaymentProvider {
       paymentId,
       status: 'SUCCESS',
       transactionId: `txn-verified-${Date.now().toString(36).toUpperCase()}`,
-      amount: { amount: 0, currency: 'USD' },
+      amount: { amount: 0, currency: 'PKR' },
       message: 'Payment verified.',
       paidAt: new Date().toISOString(),
     };
@@ -71,7 +71,7 @@ export class MockPaymentProvider implements IPaymentProvider {
       return {
         refundId: `refund-${seed}-${Date.now()}`,
         status: 'FAILED',
-        amount: { amount: 0, currency: 'USD' },
+        amount: { amount: 0, currency: 'PKR' },
         message: 'Refund could not be processed at this time.',
       };
     }
@@ -79,7 +79,7 @@ export class MockPaymentProvider implements IPaymentProvider {
     return {
       refundId: `refund-${seed}-${Date.now()}`,
       status: 'PROCESSED',
-      amount: { amount: 0, currency: 'USD' },
+      amount: { amount: 0, currency: 'PKR' },
       message: 'Refund processed successfully.',
     };
   }
