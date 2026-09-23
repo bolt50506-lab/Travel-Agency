@@ -1,4 +1,4 @@
-# Voyago self-hosted server
+# Destino Travels self-hosted server
 
 This deployment removes the dependency on Supabase Cloud.
 
@@ -19,24 +19,24 @@ PostgREST is a standalone PostgreSQL REST server, not a Supabase Cloud service.
 
    npm.cmd run selfhost:prepare
 
-4. Start the database and PostgREST:
+4. Start the database and PostgREST. Docker Compose does not read `.env.local` automatically, so pass it explicitly:
 
-   docker compose -f docker-compose.self-hosted.yml up -d
+   docker compose --env-file .env.local -f docker-compose.self-hosted.yml up -d
 
 5. Build and start the application:
 
    npm.cmd run build
    npm.cmd start
 
-The Next.js application uses port 3000. PostgREST uses localhost port 3001 and PostgreSQL uses localhost port 5432. Neither database service should be exposed through the public tunnel.
+The Next.js application uses port 3000. PostgREST uses localhost port 3002 and PostgreSQL uses localhost port 5432. Neither database service should be exposed through the public tunnel.
 
 ## Resetting an empty development database
 
 Only for a new/test installation:
 
-   docker compose -f docker-compose.self-hosted.yml down -v
+   docker compose --env-file .env.local -f docker-compose.self-hosted.yml down -v
    npm.cmd run selfhost:prepare
-   docker compose -f docker-compose.self-hosted.yml up -d
+   docker compose --env-file .env.local -f docker-compose.self-hosted.yml up -d
 
 Never use `down -v` on a production installation because it destroys the PostgreSQL volume.
 
