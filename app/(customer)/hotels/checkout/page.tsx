@@ -124,22 +124,7 @@ export default function HotelCheckoutPage() {
   const handlePayment = async () => {
     setPaymentProcessing(true);
     setError(null);
-
     try {
-      const paymentRes = await fetch('/api/payments/create', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          bookingReference: `AG-${Date.now().toString(36).toUpperCase()}`,
-          amount: selectedRoom!.totalPrice,
-          method: 'card',
-          card: { number: '4111111111111111', name: 'Test Card', expiry: '12/27', cvv: '123' },
-        }),
-      });
-      const paymentData = await paymentRes.json();
-      if (!paymentRes.ok) throw new Error(paymentData.error || 'Payment failed');
-      if (paymentData.status !== 'SUCCESS') throw new Error('Payment was declined. Please try a different payment method.');
-
       const bookRes = await fetch('/api/bookings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -148,17 +133,25 @@ export default function HotelCheckoutPage() {
           totalAmount: selectedRoom!.totalPrice,
           contactEmail,
           contactPhone,
-          hotelDetails: {
-            ...hotel!,
-            room: selectedRoom!,
-            guests,
-          },
+          hotelDetails: { ...hotel!, room: selectedRoom!, guests },
         }),
       });
       const bookData = await bookRes.json();
-      if (!bookRes.ok) throw new Error(bookData.error || 'Booking failed');
+      if (!bookRes.ok) throw new Error(bookData.error || 'Booking request failed');
 
-      setBookingResult({ reference: bookData.reference, status: bookData.status });
+      const paymentRes = await fetch('/api/payments/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          bookingReference: bookData.reference,
+          amount: selectedRoom!.totalPrice,
+          method: 'bank_transfer',
+        }),
+      });
+      const paymentData = await paymentRes.json();
+      if (!paymentRes.ok) throw new Error(paymentData.error || 'Payment submission failed');
+
+      setBookingResult({ reference: bookData.reference, status: paymentData.status || bookData.status });
       setStep('confirmation');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong during booking');
@@ -413,16 +406,16 @@ export default function HotelCheckoutPage() {
               <Card className="p-4">
                 <div className="flex items-center gap-2 mb-4">
                   <CreditCard className="h-5 w-5 text-primary" />
-                  <h3 className="text-sm font-semibold">Card Details</h3>
+                  <h3 className="text-sm font-semibold">Payment Method</h3>
                 </div>
                 <div className="space-y-3">
                   <div className="space-y-1.5">
-                    <Label htmlFor="hcardName">Cardholder Name</Label>
-                    <Input id="hcardName" defaultValue="John Smith" placeholder="Name on card" />
+                    <Label htmlFor="hcardName">Payment method</Label>
+                    <Input id="hcardName" defaultValue="John Smith" placeholder="Your selected payment method" />
                   </div>
                   <div className="space-y-1.5">
-                    <Label htmlFor="hcardNumber">Card Number</Label>
-                    <Input id="hcardNumber" defaultValue="4111 1111 1111 1111" placeholder="0000 0000 0000 0000" />
+                    <Label htmlFor="hcardNumber">Bank / Raast / JazzCash / Easypaisa</Label>
+                    <Input id="hcardNumber" defaultValue="4111 1111 1111 1111" placeholder="Payment reference (optional)" />
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div className="space-y-1.5">

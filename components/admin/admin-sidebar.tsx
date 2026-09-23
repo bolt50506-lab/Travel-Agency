@@ -19,6 +19,14 @@ import {
   ScrollText,
   Building2,
   ClipboardList,
+  FileText,
+  PlaneTakeoff,
+  BriefcaseBusiness,
+  HeartPulse,
+  Repeat2,
+  WalletCards,
+  Network,
+  UserRoundSearch,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -29,9 +37,19 @@ const sidebarLinks = [
   { href: '/admin/flights', label: 'Flights', icon: Plane },
   { href: '/admin/hotels', label: 'Hotels', icon: BedDouble },
   { href: '/admin/customers', label: 'Customers', icon: Users },
+  { href: '/admin/travelers', label: 'Travelers', icon: UserRoundSearch },
+  { href: '/admin/leads', label: 'CRM / Leads', icon: BriefcaseBusiness },
+  { href: '/admin/quotations', label: 'Quotations', icon: FileText },
+  { href: '/admin/packages', label: 'Packages', icon: BriefcaseBusiness },
+  { href: '/admin/visa', label: 'Visa Services', icon: FileText },
+  { href: '/admin/umrah', label: 'Umrah', icon: PlaneTakeoff },
+  { href: '/admin/insurance', label: 'Travel Insurance', icon: HeartPulse },
+  { href: '/admin/reissues', label: 'Reissues', icon: Repeat2 },
   { href: '/admin/agents', label: 'Agents', icon: UserCog },
   { href: '/admin/payments', label: 'Payments', icon: CreditCard },
   { href: '/admin/refunds', label: 'Refunds', icon: RefreshCw },
+  { href: '/admin/finance', label: 'Finance', icon: WalletCards },
+  { href: '/admin/b2b', label: 'B2B Agencies', icon: Network },
   { href: '/admin/providers', label: 'Providers', icon: Building2 },
   { href: '/admin/markup', label: 'Markup', icon: Percent },
   { href: '/admin/commissions', label: 'Commissions', icon: DollarSign },
@@ -51,7 +69,7 @@ export function AdminSidebar() {
         <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary">
           <span className="text-sm font-bold text-primary-foreground">V</span>
         </div>
-        <span className="text-lg font-bold tracking-tight">Voyago</span>
+        <span className="text-lg font-bold tracking-tight">Pakistan Travel Agency</span>
         <span className="text-xs text-muted-foreground ml-auto">Admin</span>
       </div>
 
@@ -81,6 +99,7 @@ export function AdminSidebar() {
         <Link href="/" className="flex items-center gap-2 rounded-md px-3 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-muted">
           ← Back to Site
         </Link>
+        <Link href="/api/auth/logout" className="mt-1 flex items-center gap-2 rounded-md px-3 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-muted">Sign out</Link>
       </div>
     </aside>
   );

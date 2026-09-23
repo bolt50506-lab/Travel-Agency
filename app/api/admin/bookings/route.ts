@@ -1,31 +1,19 @@
 import { NextRequest } from 'next/server';
 import { successResponse, errorResponse } from '@/lib/utils/api';
-import { mockBookings } from '@/lib/mock/booking-store';
+import { supabaseAdmin } from '@/lib/supabase/server';
+import { requireStaff } from '@/lib/auth/server';
 
 export async function GET(req: NextRequest) {
   try {
-    const { searchParams } = new URL(req.url);
-    const status = searchParams.get('status');
-    const type = searchParams.get('type');
-    const search = searchParams.get('search')?.toLowerCase();
-
-    let bookings = [...mockBookings];
-
-    if (status) bookings = bookings.filter((b) => b.status === status);
-    if (type) bookings = bookings.filter((b) => b.type === type);
-    if (search) {
-      bookings = bookings.filter(
-        (b) =>
-          b.reference.toLowerCase().includes(search) ||
-          (b.fulfillment?.pnr || '').toLowerCase().includes(search) ||
-          (b.fulfillment?.hotelConfirmationNumber || '').toLowerCase().includes(search) ||
-          (b.contactEmail || '').toLowerCase().includes(search)
-      );
-    }
-
-    return successResponse({ bookings, total: bookings.length });
-  } catch (err) {
-    console.error('Admin bookings error:', err);
-    return errorResponse('Something went wrong', 'INTERNAL_ERROR', 500);
-  }
+    await requireStaff();
+    const {searchParams}=new URL(req.url);
+    const status=searchParams.get('status'); const type=searchParams.get('type'); const search=searchParams.get('search');
+    let query=supabaseAdmin.from('bookings').select('*,customers(full_name,email,phone),fulfillment_tasks(*)').order('created_at',{ascending:false});
+    if(status) query=query.eq('status',status);
+    if(type) query=query.eq('type',type);
+    const {data,error}=await query; if(error) throw error;
+    let rows=data||[];
+    if(search){const q=search.toLowerCase(); rows=rows.filter(b=>b.reference.toLowerCase().includes(q)||(b.contact_email||'').toLowerCase().includes(q)||(b.supplier_reference||'').toLowerCase().includes(q));}
+    return successResponse({bookings:rows,total:rows.length});
+  } catch(err){if(err instanceof Error&&err.message==='UNAUTHORIZED_STAFF')return errorResponse('Staff access required','FORBIDDEN',403);console.error(err);return errorResponse('Unable to load bookings','INTERNAL_ERROR',500);}
 }

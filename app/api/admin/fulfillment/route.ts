@@ -1,66 +1,17 @@
 import { NextRequest } from 'next/server';
 import { successResponse, errorResponse } from '@/lib/utils/api';
-import { mockBookings } from '@/lib/mock/booking-store';
-import type { Booking, FulfillmentTask, FulfillmentNote, BookingStatus, BookingTimelineEvent } from '@/types/booking';
+import { supabaseAdmin } from '@/lib/supabase/server';
+import { requireStaff } from '@/lib/auth/server';
 
 export async function GET(req: NextRequest) {
   try {
-    const { searchParams } = new URL(req.url);
-    const statusFilter = searchParams.get('status');
-
-    let bookings = mockBookings.filter((b) => b.fulfillment);
-
-    if (statusFilter && statusFilter !== 'all') {
-      bookings = bookings.filter((b) => b.fulfillment!.status === statusFilter.toUpperCase());
-    }
-
-    const queue = bookings.map((b) => ({
-      id: b.id,
-      reference: b.reference,
-      type: b.type,
-      status: b.status,
-      customerEmail: b.contactEmail,
-      customerPhone: b.contactPhone,
-      totalAmount: b.totalAmount,
-      supplierCost: b.supplierCost,
-      margin: b.margin,
-      fulfillmentStatus: b.fulfillment!.status,
-      assignedTo: b.fulfillment!.assignedTo,
-      supplierName: b.fulfillment!.supplierName,
-      supplierReference: b.fulfillment!.supplierReference,
-      pnr: b.fulfillment!.pnr,
-      ticketNumber: b.fulfillment!.ticketNumber,
-      hotelConfirmationNumber: b.fulfillment!.hotelConfirmationNumber,
-      hasDocuments: b.documents.length > 0,
-      createdAt: b.createdAt,
-      updatedAt: b.updatedAt,
-      waitingTime: calculateWaitingTime(b.createdAt),
-      summary: getBookingSummary(b),
-    }));
-
-    return successResponse({ queue });
-  } catch (err) {
-    console.error('Fulfillment queue error:', err);
-    return errorResponse('Something went wrong', 'INTERNAL_ERROR', 500);
-  }
-}
-
-function calculateWaitingTime(createdAt: string): string {
-  const diff = Date.now() - new Date(createdAt).getTime();
-  const hours = Math.floor(diff / 3600000);
-  const minutes = Math.floor((diff % 3600000) / 60000);
-  if (hours > 0) return `${hours}h ${minutes}m`;
-  return `${minutes}m`;
-}
-
-function getBookingSummary(b: Booking): string {
-  if (b.type === 'flight' && b.flightDetails) {
-    const seg = b.flightDetails.segments[0];
-    if (seg) return `${seg.origin} → ${seg.destination}`;
-    return `Flight (${b.flightDetails.passengers.length} passengers)`;
-  }
-  if (b.type === 'hotel' && b.hotelDetails) {
-    return `${b.hotelDetails.name} — ${b.hotelDetails.room.type}`;
-  }
-  return '';
+    await requireStaff();
+    const statusFilter=new URL(req.url).searchParams.get('status');
+    let q=supabaseAdmin.from('bookings').select('*,customers(full_name,email,phone),fulfillment_tasks(*)').order('created_at',{ascending:true});
+    const {data,error}=await q; if(error) throw error;
+    let rows=(data||[]).filter((b:any)=>b.fulfillment_tasks?.length);
+    if(statusFilter&&statusFilter!=='all') rows=rows.filter((b:any)=>b.fulfillment_tasks?.[0]?.status===statusFilter.toLowerCase());
+    const queue=rows.map((b:any)=>{const task=b.fulfillment_tasks[0];return {id:b.id,reference:b.reference,type:b.type,status:b.status,customerEmail:b.contact_email,customerPhone:b.contact_phone,totalAmount:{amount:Number(b.customer_price),currency:b.currency},supplierCost:{amount:Number(b.supplier_cost),currency:b.currency},margin:{amount:Number(b.agency_margin),currency:b.currency},fulfillmentStatus:String(task.status).toUpperCase(),assignedTo:task.assigned_to,supplierName:task.supplier_name,supplierReference:task.supplier_reference,pnr:task.pnr,ticketNumber:task.ticket_number,hotelConfirmationNumber:task.hotel_confirmation_number,createdAt:b.created_at,updatedAt:b.updated_at,summary:b.type==='flight'?'Flight booking':'Hotel booking'}});
+    return successResponse({queue});
+  }catch(err){if(err instanceof Error&&err.message==='UNAUTHORIZED_STAFF')return errorResponse('Staff access required','FORBIDDEN',403);console.error(err);return errorResponse('Unable to load fulfillment queue','INTERNAL_ERROR',500);}
 }

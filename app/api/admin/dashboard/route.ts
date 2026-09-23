@@ -1,80 +1,31 @@
 import { NextRequest } from 'next/server';
 import { successResponse, errorResponse } from '@/lib/utils/api';
-import { mockBookings } from '@/lib/mock/booking-store';
+import { supabaseAdmin } from '@/lib/supabase/server';
+import { requireStaff } from '@/lib/auth/server';
 
-export async function GET() {
+export async function GET(_req: NextRequest) {
   try {
-    const totalBookings = mockBookings.length;
-    const today = new Date().toISOString().slice(0, 10);
-    const todayBookings = mockBookings.filter((b) => b.createdAt.slice(0, 10) === today).length;
-    const flightBookings = mockBookings.filter((b) => b.type === 'flight').length;
-    const hotelBookings = mockBookings.filter((b) => b.type === 'hotel').length;
-
-    const revenue = mockBookings
-      .filter((b) => !['CANCELLED', 'REFUNDED', 'FAILED'].includes(b.status))
-      .reduce((sum, b) => sum + b.totalAmount.amount, 0);
-
-    const grossMargin = mockBookings
-      .filter((b) => !['CANCELLED', 'REFUNDED', 'FAILED'].includes(b.status))
-      .reduce((sum, b) => sum + (b.margin?.amount || 0), 0);
-
-    const pendingPayments = mockBookings.filter((b) =>
-      ['PAYMENT_PENDING', 'BOOKING_REQUESTED'].includes(b.status)
-    ).length;
-
-    const fulfillmentPending = mockBookings.filter((b) =>
-      b.fulfillment && ['PENDING', 'IN_PROGRESS'].includes(b.fulfillment.status)
-    ).length;
-
-    const refundRequests = mockBookings.filter((b) =>
-      ['REFUND_REQUESTED', 'REFUND_PROCESSING'].includes(b.status)
-    ).length;
-
-    const bookingsOverTime = [
-      { date: 'Sep 15', bookings: 1 },
-      { date: 'Sep 16', bookings: 0 },
-      { date: 'Sep 17', bookings: 0 },
-      { date: 'Sep 18', bookings: 1 },
-      { date: 'Sep 19', bookings: 0 },
-      { date: 'Sep 20', bookings: 1 },
-      { date: 'Sep 21', bookings: 0 },
-    ];
-
-    const revenueOverTime = [
-      { date: 'Sep 15', revenue: 842 },
-      { date: 'Sep 16', revenue: 0 },
-      { date: 'Sep 17', revenue: 0 },
-      { date: 'Sep 18', revenue: 560 },
-      { date: 'Sep 19', revenue: 0 },
-      { date: 'Sep 20', revenue: 1240 },
-      { date: 'Sep 21', revenue: 0 },
-    ];
-
-    const flightVsHotel = [
-      { name: 'Flights', value: flightBookings },
-      { name: 'Hotels', value: hotelBookings },
-    ];
-
-    return successResponse({
-      cards: {
-        totalBookings,
-        todayBookings,
-        flightBookings,
-        hotelBookings,
-        revenue,
-        grossMargin,
-        pendingPayments,
-        fulfillmentPending,
-        refundRequests,
-      },
-      charts: {
-        bookingsOverTime,
-        revenueOverTime,
-        flightVsHotel,
-      },
-    });
+    await requireStaff();
+    const { data: bookings, error } = await supabaseAdmin.from('bookings').select('id,type,status,customer_price,agency_margin,currency,created_at').order('created_at',{ascending:false});
+    if (error) throw error;
+    const rows = bookings || [];
+    const today = new Date().toISOString().slice(0,10);
+    const active = rows.filter(b => !['CANCELLED','REFUNDED','FAILED'].includes(b.status));
+    const cards = {
+      totalBookings: rows.length,
+      todayBookings: rows.filter(b => b.created_at?.slice(0,10) === today).length,
+      flightBookings: rows.filter(b => b.type === 'flight').length,
+      hotelBookings: rows.filter(b => b.type === 'hotel').length,
+      revenue: active.reduce((s,b)=>s+Number(b.customer_price||0),0),
+      grossMargin: active.reduce((s,b)=>s+Number(b.agency_margin||0),0),
+      pendingPayments: rows.filter(b=>['BOOKING_REQUESTED','PAYMENT_PENDING'].includes(b.status)).length,
+      fulfillmentPending: rows.filter(b=>['BOOKING_REQUESTED','PAYMENT_RECEIVED','AGENCY_PROCESSING','SUPPLIER_BOOKING_IN_PROGRESS','DOCUMENT_PENDING','TICKET_PENDING','VOUCHER_PENDING'].includes(b.status)).length,
+      refundRequests: rows.filter(b=>['REFUND_REQUESTED','REFUND_PROCESSING'].includes(b.status)).length,
+    };
+    const days = Array.from({length:7},(_,i)=>{const d=new Date(); d.setDate(d.getDate()-(6-i)); const key=d.toISOString().slice(0,10); return {date:key.slice(5), bookings:rows.filter(b=>b.created_at?.slice(0,10)===key).length, revenue:rows.filter(b=>b.created_at?.slice(0,10)===key).reduce((s,b)=>s+Number(b.customer_price||0),0)};});
+    return successResponse({cards,charts:{bookingsOverTime:days.map(d=>({date:d.date,bookings:d.bookings})),revenueOverTime:days.map(d=>({date:d.date,revenue:d.revenue})),flightVsHotel:[{name:'Flights',value:cards.flightBookings},{name:'Hotels',value:cards.hotelBookings}]},recent:rows.slice(0,10)});
   } catch (err) {
-    console.error('Admin dashboard error:', err);
-    return errorResponse('Something went wrong', 'INTERNAL_ERROR', 500);
+    if (err instanceof Error && err.message === 'UNAUTHORIZED_STAFF') return errorResponse('Staff access required','FORBIDDEN',403);
+    console.error(err); return errorResponse('Unable to load dashboard','INTERNAL_ERROR',500);
   }
 }
