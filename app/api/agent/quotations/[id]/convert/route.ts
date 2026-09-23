@@ -26,6 +26,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     if (quote.valid_until && new Date(quote.valid_until) < new Date()) {
       return errorResponse('Quotation has expired', 'QUOTE_EXPIRED', 409);
     }
+    if (!['flight','hotel'].includes(String(quote.service_type))) return errorResponse('Only flight and hotel quotations can be converted to bookings in this release', 'SERVICE_NOT_BOOKABLE', 409);
     if (!quote.customer_id) return errorResponse('Quotation customer is required', 'CUSTOMER_REQUIRED', 409);
 
     const { data: customer } = await supabaseAdmin
@@ -47,7 +48,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     const reference = bookingReference();
     const { data: booking, error: bookingError } = await supabaseAdmin.from('bookings').insert({
       reference,
-      type: ['flight','hotel'].includes(String(quote.service_type)) ? String(quote.service_type) : 'flight',
+      type: String(quote.service_type),
       status: 'BOOKING_REQUESTED',
       customer_id: customer.id,
       agent_id: agent.id,
@@ -70,7 +71,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
 
     await supabaseAdmin.from('booking_items').insert({
       booking_id: booking.id,
-      item_type: ['flight','hotel'].includes(String(quote.service_type)) ? String(quote.service_type) : 'flight',
+      item_type: String(quote.service_type),
       description: quote.title || `Quotation ${quote.reference}`,
       supplier_cost: supplierCost,
       customer_price: total,
