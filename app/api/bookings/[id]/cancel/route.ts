@@ -62,10 +62,9 @@ export async function POST(
     });
     if (history.error) console.error('Cancel history warning:', history.error);
 
-    await supabaseAdmin
-      .from('fulfillment_tasks')
-      .update({ status: 'cancelled', updated_at: now })
-      .eq('booking_id', booking.id);
+    if (nextStatus === 'CANCELLED') {
+      await supabaseAdmin.from('fulfillment_tasks').update({ status: 'cancelled', updated_at: now }).eq('booking_id', booking.id);
+    }
 
     return successResponse({
       id: updated.data.id,
