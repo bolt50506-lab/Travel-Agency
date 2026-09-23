@@ -16,6 +16,7 @@ export async function POST(req:NextRequest){
   }).eq('id',body.paymentId).select('*').single();
   if(ue)throw ue;
   const bookingStatus=status==='verified'?'PAYMENT_RECEIVED':'PAYMENT_PENDING';
+  await supabaseAdmin.from('payment_transactions').update({status,updated_at:now}).eq('payment_id',payment.id);
   await supabaseAdmin.from('bookings').update({status:bookingStatus,updated_at:now}).eq('id',payment.booking_id);
   await supabaseAdmin.from('booking_status_history').insert({booking_id:payment.booking_id,status:bookingStatus,description:status==='verified'?'Payment verified by agency':'Payment rejected by agency',changed_by:actor.id,metadata:{paymentId:payment.id}});
   const {data:booking}=await supabaseAdmin.from('bookings').select('customer_id,reference').eq('id',payment.booking_id).single();
@@ -25,5 +26,5 @@ export async function POST(req:NextRequest){
     body:status==='verified'?'Payment for '+booking.reference+' was verified. The agency can now process your booking.':(body.reason||'Please contact the agency regarding your payment.')
   });
   return successResponse({payment:updated,bookingStatus});
- }catch(err){if(err instanceof Error&&err.message==='UNAUTHORIZED_ADMIN')return errorResponse('Staff access required','FORBIDDEN',403);console.error(err);return errorResponse('Unable to verify payment','INTERNAL_ERROR',500);}
+ }catch(err){if(err instanceof Error&&err.message==='UNAUTHORIZED_ADMIN')return errorResponse('Admin access required','FORBIDDEN',403);console.error(err);return errorResponse('Unable to verify payment','INTERNAL_ERROR',500);}
 }
