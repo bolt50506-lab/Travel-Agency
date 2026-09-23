@@ -17,7 +17,7 @@ export default function Home() {
 
   return (
     <div className="flex flex-col">
-      <section className="relative isolate overflow-hidden bg-slate-950">
+      <section className="relative isolate overflow-hidden bg-[#062f35]">
         <div
           className="absolute inset-0 bg-cover bg-center"
           style={{
@@ -25,28 +25,28 @@ export default function Home() {
               'url(https://images.pexels.com/photos/33976726/pexels-photo-33976726.jpeg?auto=compress&cs=tinysrgb&w=1920)',
           }}
         />
-        <div className="absolute inset-0 bg-gradient-to-b from-slate-950/75 via-slate-950/60 to-slate-950/90" />
-        <div className="absolute -left-24 top-10 h-72 w-72 rounded-full bg-cyan-400/20 blur-3xl animate-float-slow" />
-        <div className="absolute right-0 top-0 h-96 w-96 rounded-full bg-blue-500/20 blur-3xl animate-drift" />
-        <div className="absolute bottom-0 left-1/3 h-64 w-64 rounded-full bg-violet-500/15 blur-3xl animate-float-slow" />
+        <div className="absolute inset-0 bg-gradient-to-b from-[#062f35]/90 via-[#063b42]/75 to-[#021f24]/95" />
+        <div className="absolute -left-24 top-10 h-72 w-72 rounded-full bg-[#20b8b0]/20 blur-3xl animate-float-slow" />
+        <div className="absolute right-0 top-0 h-96 w-96 rounded-full bg-[#d4af37]/18 blur-3xl animate-drift" />
+        <div className="absolute bottom-0 left-1/3 h-64 w-64 rounded-full bg-[#20b8b0]/15 blur-3xl animate-float-slow" />
 
         <div className="absolute inset-0 opacity-20" style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,.08) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.08) 1px, transparent 1px)', backgroundSize: '48px 48px' }} />
 
         <div className="relative container-page py-14 md:py-20 lg:py-24">
           <div className="max-w-4xl animate-in fade-in slide-in-from-bottom-3 duration-700">
-            <div id="hero-workflow-badge" className="!mb-6 !inline-flex !items-center !gap-2 !rounded-full !border-2 !border-white !bg-[#e6391f] !px-5 !py-3 !text-sm !font-black !tracking-wide !text-white !opacity-100 !shadow-2xl !shadow-black/60 !ring-4 !ring-white/40 !backdrop-blur-none">
-              <Sparkles className="h-4 w-4 text-orange-500" />
-              <span>Search, compare and book with a real agency workflow</span>
+            <div id="hero-workflow-badge" className="!mb-6 !inline-flex !items-center !gap-2 !rounded-full !border !border-[#e5c45b]/60 !bg-[#0a4b50]/90 !px-4 !py-2.5 !text-xs !font-semibold !tracking-[0.12em] !text-[#f4d77b] !uppercase !shadow-lg !shadow-black/20 !backdrop-blur-sm">
+              <Sparkles className="h-4 w-4 text-[#e5c45b]" />
+              <span>FLIGHTS • HOTELS • UMRAH • TRAVEL SERVICES</span>
             </div>
-            <h1 className="max-w-4xl text-5xl font-black leading-[0.98] tracking-[-0.04em] text-white drop-shadow-2xl sm:text-6xl md:text-7xl lg:text-[5.5rem]">
-              Your next trip,
-              <span className="block bg-gradient-to-r from-orange-400 via-rose-300 to-white bg-clip-text pb-2 font-serif italic font-bold text-transparent">
-                made effortless.
+            <h1 className="max-w-4xl text-4xl font-semibold leading-[1.02] tracking-[-0.035em] text-white drop-shadow-2xl sm:text-5xl md:text-6xl lg:text-7xl">
+              Travel, planned with
+              <span className="block bg-gradient-to-r from-[#f1d06b] via-[#e5bd4f] to-white bg-clip-text pb-2 font-serif italic font-medium text-transparent">
+                confidence.
               </span>
             </h1>
-            <div className="mt-6 h-px w-24 bg-gradient-to-r from-orange-500 to-transparent" />
+            <div className="mt-6 h-px w-24 bg-[#e2bc4d]" />
             <p className="mt-5 max-w-2xl text-base font-medium leading-7 text-white/80 md:text-lg">
-              Find flights and hotels, lock in the details, submit payment securely, and let your travel team handle the fulfillment.
+              Compare flight and hotel options in PKR, choose what works for you, and complete your booking through a professional travel agency workflow.
             </p>
           </div>
 
@@ -54,7 +54,7 @@ export default function Home() {
             <div className="rounded-3xl border border-white/15 bg-white/[0.08] p-2 shadow-2xl shadow-black/20 backdrop-blur-2xl md:p-3">
               <Tabs value={activeTab} onValueChange={setActiveTab}>
                 <TabsList className="grid h-auto w-full max-w-sm grid-cols-2 bg-white/10 p-1">
-                  <TabsTrigger value="flights" className="gap-2 rounded-xl py-2.5 text-white data-[state=active]:bg-white data-[state=active]:text-primary"><Plane className="h-4 w-4" />Flights</TabsTrigger>
+                  <TabsTrigger value="flights" className="gap-2 rounded-xl py-2.5 text-white data-[state=active]:bg-[#d4af37] data-[state=active]:text-[#062f35]"><Plane className="h-4 w-4" />Flights</TabsTrigger>
                   <TabsTrigger value="hotels" className="gap-2 rounded-xl py-2.5 text-white data-[state=active]:bg-white data-[state=active]:text-primary"><Hotel className="h-4 w-4" />Hotels</TabsTrigger>
                 </TabsList>
                 <TabsContent value="flights" className="mt-3"><FlightSearchForm /></TabsContent>
@@ -65,12 +65,12 @@ export default function Home() {
 
           <div className="mt-7 grid max-w-4xl gap-3 sm:grid-cols-3">
             {[
-              [ShieldCheck, 'Secure checkout', 'Clear pricing and payment tracking'],
-              [BadgeCheck, 'Agency reviewed', 'Human fulfillment when needed'],
-              [ArrowRight, 'Easy to manage', 'Bookings, documents and status in one place'],
+              [ShieldCheck, 'Secure booking', 'Clear PKR pricing and payment tracking'],
+              [BadgeCheck, 'Travel agency support', 'Human assistance when your trip needs it'],
+              [ArrowRight, 'One place to manage', 'Bookings, documents and status together'],
             ].map(([Icon, title, text]) => (
-              <div key={title as string} className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 p-3.5 text-white/80 backdrop-blur">
-                <div className="rounded-xl bg-white/10 p-2"><Icon className="h-4 w-4 text-cyan-300" /></div>
+              <div key={title as string} className="flex items-center gap-3 rounded-2xl border border-white/10 bg-[#073f45]/60 p-3.5 text-white/80 backdrop-blur">
+                <div className="rounded-xl bg-white/10 p-2"><Icon className="h-4 w-4 text-[#f0cd62]" /></div>
                 <div><p className="text-sm font-semibold text-white">{title as string}</p><p className="text-xs text-white/55">{text as string}</p></div>
               </div>
             ))}
