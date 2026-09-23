@@ -16,6 +16,7 @@ const configs: Record<string, { table: string; fields: string[]; search: string[
   reissue_requests: { table: 'reissue_requests', fields: ['booking_id','reason','new_travel_date','supplier_penalty','agency_fee','fare_difference','total_due','status'], search: ['booking_id','reason'] },
   b2b_agencies: { table: 'b2b_agencies', fields: ['name','email','phone','city','credit_limit','wallet_balance','commission_rate'], search: ['name','email','phone'] },
   agents: { table: 'agents', fields: ['user_id','agency_id','agent_code','commission_rate','is_active','hired_at'], search: ['agent_code','user_id'] },
+  agent_commissions: { table: 'agent_commissions', fields: ['booking_id','agent_id','basis_amount','commission_type','commission_rate','commission_amount','currency','status','paid_at'], search: ['booking_id','agent_id','status'] },
   pricing_rules: { table: 'pricing_rules', fields: ['rule_type','scope','scope_value','value','is_active','priority','effective_from','effective_to'], search: ['rule_type','scope','scope_value'] },
   expenses: { table: 'expenses', fields: ['category','description','amount','currency','expense_date'], search: ['category','description'] }
 };
