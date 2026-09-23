@@ -4,6 +4,7 @@ import { NextRequest } from 'next/server';
 import { successResponse, errorResponse } from '@/lib/utils/api';
 import { supabaseAdmin } from '@/lib/supabase/server';
 import { getServerActor } from '@/lib/auth/server';
+import { requireAgentRecord } from '@/lib/auth/agent';
 
 function mapBooking(row: any, notes: any[] = []) {
   const item = Array.isArray(row.booking_items) ? row.booking_items[0] : null;
@@ -100,6 +101,11 @@ export async function GET(
       if (!customer.data || customer.data.id !== result.data.customer_id) {
         return errorResponse('Booking not found', 'NOT_FOUND', 404);
       }
+    } else if (actor.role === 'agent') {
+      const agent = await requireAgentRecord(actor.id);
+      if (result.data.agent_id !== agent.id) return errorResponse('Booking not found', 'NOT_FOUND', 404);
+    } else if (actor.role !== 'admin') {
+      return errorResponse('Booking not found', 'NOT_FOUND', 404);
     }
 
     const task = Array.isArray(result.data.fulfillment_tasks) ? result.data.fulfillment_tasks[0] : result.data.fulfillment_tasks;
