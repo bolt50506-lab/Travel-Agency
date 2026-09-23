@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server';
 import { hotelService } from '@/lib/services';
 import { hotelSearchSchema } from '@/lib/validation/schemas';
 import { successResponse, errorResponse, validateBody } from '@/lib/utils/api';
+import { getActivePricingRules, priceHotelRoom } from '@/lib/services/pricing-service';
 
 export async function POST(req: NextRequest) {
   try {
@@ -13,7 +14,13 @@ export async function POST(req: NextRequest) {
     }
 
     const result = await hotelService.searchHotels(validation.data);
-    return successResponse(result);
+    const rules = await getActivePricingRules();
+    const offers = await Promise.all(result.offers.map(async (hotel) => ({
+      ...hotel,
+      rooms: await Promise.all(hotel.rooms.map((room) => priceHotelRoom(room, hotel, rules))),
+      startingPrice: { amount: Math.min(...hotel.rooms.map((room) => Number(room.totalPrice?.amount || 0))), currency: 'PKR' },
+    })));
+    return successResponse({ ...result, offers });
   } catch (err) {
     console.error('Hotel search error:', err);
     return errorResponse('Something went wrong while searching hotels', 'INTERNAL_ERROR', 500);
