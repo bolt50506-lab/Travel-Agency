@@ -1,2 +1,5 @@
-import { AgentModulePage } from '@/components/agent/agent-module-page';
-export default function AgentPaymentsPage(){return <AgentModulePage title="Payments" description="Track customer payment references and payment status." />;}
+import AgentRecords from '@/components/agent/agent-records';
+
+export default function Page() {
+  return <AgentRecords module="payments" />;
+}
