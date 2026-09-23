@@ -86,6 +86,8 @@ function mapBooking(row: any) {
   return {
     id: row.id,
     reference: row.reference,
+    bookedByUserId: row.booked_by_user_id || null,
+    bookedByRole: row.booked_by_role || null,
     type: row.type,
     status: row.status,
     totalAmount: { amount: Number(row.customer_price || 0), currency: row.currency || 'PKR' },
@@ -244,6 +246,8 @@ export async function POST(req: NextRequest) {
       type: body.type,
       status: 'BOOKING_REQUESTED',
       customer_id: customer.id,
+      booked_by_user_id: actor.id,
+      booked_by_role: actor.role,
       ...(agent ? { agent_id: agent.id, agency_id: agent.agency_id || null } : {}),
       contact_email: agentContactEmail,
       contact_phone: agentContactPhone,
@@ -284,7 +288,7 @@ export async function POST(req: NextRequest) {
       status: 'BOOKING_REQUESTED',
       description: 'Booking request received by agency',
       changed_by: actor.id,
-      metadata: { source: actor.role === 'agent' ? 'agent_portal' : 'customer_checkout', pricingRuleIds: pricing.appliedRuleIds },
+      metadata: { source: actor.role === 'agent' ? 'agent_portal' : actor.role === 'admin' ? 'admin_portal' : 'customer_checkout', bookedByUserId: actor.id, bookedByRole: actor.role, pricingRuleIds: pricing.appliedRuleIds },
     })).error;
     if (historyError) console.error('Booking history warning:', historyError);
 
