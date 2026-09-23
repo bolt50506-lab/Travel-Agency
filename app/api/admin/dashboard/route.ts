@@ -3,11 +3,11 @@ export const dynamic = 'force-dynamic';
 import { NextRequest } from 'next/server';
 import { successResponse, errorResponse } from '@/lib/utils/api';
 import { supabaseAdmin } from '@/lib/supabase/server';
-import { requireStaff } from '@/lib/auth/server';
+import { requireAdmin } from '@/lib/auth/server';
 
 export async function GET(_req: NextRequest) {
   try {
-    await requireStaff();
+    await requireAdmin();
     const { data: bookings, error } = await supabaseAdmin.from('bookings').select('id,type,status,customer_price,agency_margin,currency,created_at').order('created_at',{ascending:false});
     if (error) throw error;
     const rows = bookings || [];
