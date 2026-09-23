@@ -29,6 +29,9 @@ export async function POST(req:NextRequest,{params}:{params:{id:string}}){
   if(!transition)return errorResponse('Unknown action','VALIDATION_ERROR',400);
   const {data:booking,error:be}=await supabaseAdmin.from('bookings').select('*,payments(status)').eq('id',params.id).single(); if(be||!booking)return errorResponse('Booking not found','NOT_FOUND',404);
   if(['mark_ticketed','mark_voucher_issued'].includes(action) && !(booking.payments||[]).some((p:any)=>p.status==='verified')) return errorResponse('A verified payment is required before issuing customer-facing travel documents','PAYMENT_REQUIRED',409);
+  if(action==='supplier_confirmed' && !body.supplierReference) return errorResponse('Supplier confirmation/reference is required','SUPPLIER_REFERENCE_REQUIRED',400);
+  if(action==='mark_ticketed' && (!body.ticketNumber || !body.pnr)) return errorResponse('PNR and ticket number are required before ticketing','TICKETING_DATA_REQUIRED',400);
+  if(action==='mark_voucher_issued' && !body.hotelConfirmationNumber) return errorResponse('Hotel confirmation number is required before voucher issuance','HOTEL_CONFIRMATION_REQUIRED',400);
   const now=new Date().toISOString();
   const bookingPatch:any={updated_at:now,status:transition.status};
   if(body.supplierName!==undefined)bookingPatch.supplier_name=body.supplierName;
