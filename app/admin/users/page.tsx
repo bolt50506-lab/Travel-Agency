@@ -22,6 +22,7 @@ export default function AdminUsersPage() {
   const [search,setSearch]=useState('');
   const [roleFilter,setRoleFilter]=useState('all');
   const [loading,setLoading]=useState(true);
+  const [saving,setSaving]=useState(false);
 
   async function load() {
     setLoading(true);
@@ -41,11 +42,16 @@ export default function AdminUsersPage() {
   function startNew(){setEditing(null);setForm({role:'customer',isActive:true});setOpen(true);}
   function startEdit(u:User){setEditing(u);setForm({firstName:u.firstName,lastName:u.lastName,phone:u.phone||'',role:u.role,isActive:u.isActive,password:''});setOpen(true);}
   async function save(){
+    if (!editing && (!String(form.email||'').trim() || !String(form.password||'').trim() || !String(form.firstName||'').trim())) { toast.error('Email, password and first name are required'); return; }
+    if (!editing && String(form.password||'').length < 8) { toast.error('Password must be at least 8 characters'); return; }
+    if (form.role === 'agent' && (Number(form.commissionRate ?? 0) < 0 || Number(form.commissionRate ?? 0) > 100)) { toast.error('Commission must be between 0% and 100%'); return; }
+    setSaving(true);
     try{
       const response=await fetch('/api/admin/users',{method:editing?'PATCH':'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(editing?{id:editing.id,...form}:form)});
       const result=await response.json(); if(!response.ok) throw new Error(result.error||'Unable to save');
       toast.success(editing?'User updated':'User created');setOpen(false);setForm({});setEditing(null);await load();
     }catch(e){toast.error(e instanceof Error?e.message:'Unable to save');}
+    finally{setSaving(false);}
   }
 
   return <div className="space-y-6">
@@ -62,10 +68,10 @@ export default function AdminUsersPage() {
         <div><Label>Phone</Label><Input value={form.phone||''} onChange={e=>setForm({...form,phone:e.target.value})}/></div>
         <div><Label>Role</Label><Select value={form.role||'customer'} onValueChange={v=>setForm({...form,role:v})}><SelectTrigger><SelectValue/></SelectTrigger><SelectContent>{roles.map(r=><SelectItem key={r.id} value={r.name}>{r.name}</SelectItem>)}</SelectContent></Select></div>
         {form.role==='agent'&&<div><Label>Commission %</Label><Input type="number" min="0" max="100" step="0.01" value={form.commissionRate??0} onChange={e=>setForm({...form,commissionRate:e.target.value})}/></div>}
-        <div><Label>{editing?'New password (optional)':'Password'}</Label><Input type="password" value={form.password||''} onChange={e=>setForm({...form,password:e.target.value})}/></div>
+        {form.role==='agent'&&<div><Label>Agent code (optional)</Label><Input value={form.agentCode||''} onChange={e=>setForm({...form,agentCode:e.target.value})}/></div>\n        <div><Label>{editing?'New password (optional)':'Password'}</Label><Input type="password" value={form.password||''} onChange={e=>setForm({...form,password:e.target.value})}/></div>
         <div><Label>Status</Label><Select value={form.isActive===false?'false':'true'} onValueChange={v=>setForm({...form,isActive:v==='true'})}><SelectTrigger><SelectValue/></SelectTrigger><SelectContent><SelectItem value="true">Active</SelectItem><SelectItem value="false">Inactive</SelectItem></SelectContent></Select></div>
       </div>
-      <div className="mt-4 flex gap-2"><Button onClick={()=>void save()}>Save</Button><Button variant="outline" onClick={()=>{setOpen(false);setEditing(null)}}>Cancel</Button></div>
+      <div className="mt-4 flex gap-2"><Button disabled={saving} onClick={()=>void save()}>{saving?'Saving...':'Save'}</Button><Button variant="outline" onClick={()=>{setOpen(false);setEditing(null)}}>Cancel</Button></div>
     </Card>}
 
     <Card className="p-4"><div className="flex flex-wrap gap-2"><div className="relative flex-1 max-w-md"><Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground"/><Input className="pl-9" placeholder="Search name, email or phone..." value={search} onChange={e=>setSearch(e.target.value)}/></div><Select value={roleFilter} onValueChange={setRoleFilter}><SelectTrigger className="w-[180px]"><SelectValue/></SelectTrigger><SelectContent><SelectItem value="all">All Roles</SelectItem>{roles.map(r=><SelectItem key={r.id} value={r.name}>{r.name}</SelectItem>)}</SelectContent></Select></div></Card>
