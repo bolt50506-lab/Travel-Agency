@@ -14,7 +14,10 @@ const configs: Record<string, { table: string; fields: string[]; search: string[
   insurance_products: { table: 'insurance_products', fields: ['name','provider','destination_scope','coverage_summary','supplier_cost','selling_price','currency'], search: ['name','provider'] },
   reissue_requests: { table: 'reissue_requests', fields: ['booking_id','reason','new_travel_date','supplier_penalty','agency_fee','fare_difference','total_due','status'], search: ['booking_id','reason'] },
   expenses: { table: 'expenses', fields: ['category','description','amount','currency','expense_date'], search: ['category','description'] },
-  b2b_agencies: { table: 'b2b_agencies', fields: ['name','email','phone','city','credit_limit','wallet_balance','commission_rate'], search: ['name','email','phone'] }
+  b2b_agencies: { table: 'b2b_agencies', fields: ['name','email','phone','city','credit_limit','wallet_balance','commission_rate'], search: ['name','email','phone'] },
+  agents: { table: 'agents', fields: ['user_id','agency_id','agent_code','commission_rate','is_active','hired_at'], search: ['agent_code','user_id'] },
+  pricing_rules: { table: 'pricing_rules', fields: ['name','service_type','rule_type','value','currency','is_active','priority'], search: ['name','service_type','rule_type'] },
+  expenses: { table: 'expenses', fields: ['category','description','amount','currency','expense_date'], search: ['category','description'] }
 };
 
 function sanitize(body: Record<string, unknown>, fields: string[]) {
