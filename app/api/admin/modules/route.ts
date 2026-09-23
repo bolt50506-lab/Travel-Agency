@@ -4,6 +4,7 @@ import { supabaseAdmin } from '@/lib/supabase/server';
 import { requireStaff } from '@/lib/auth/server';
 
 const configs: Record<string, { table: string; fields: string[]; search: string[] }> = {
+  bookings: { table: 'bookings', fields: ['reference','type','status','contact_email','contact_phone','customer_price','currency','supplier_name','supplier_reference','notes'], search: ['reference','contact_email','contact_phone','status','type'] },
   customers: { table: 'customers', fields: ['full_name','email','phone','cnic','passport_number','passport_expiry','city'], search: ['full_name','email','phone'] },
   travelers: { table: 'travelers', fields: ['customer_id','first_name','last_name','date_of_birth','passport_number','passport_expiry','nationality'], search: ['first_name','last_name','passport_number'] },
   leads: { table: 'leads', fields: ['name','email','phone','service_type','destination','travel_date','status'], search: ['name','email','phone','destination'] },
