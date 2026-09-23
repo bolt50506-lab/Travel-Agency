@@ -44,7 +44,7 @@ export async function GET(req: NextRequest) {
 
     return successResponse({ module: moduleName, fields: cfg.fields, rows });
   } catch (err) {
-    if (err instanceof Error && err.message === 'UNAUTHORIZED_STAFF') return errorResponse('Staff access required', 'FORBIDDEN', 403);
+    if (err instanceof Error && err.message === 'UNAUTHORIZED_ADMIN') return errorResponse('Staff access required', 'FORBIDDEN', 403);
     console.error(err);
     return errorResponse('Unable to load module', 'INTERNAL_ERROR', 500);
   }
