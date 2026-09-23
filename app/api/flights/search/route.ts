@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server';
 import { flightService } from '@/lib/services';
 import { flightSearchSchema } from '@/lib/validation/schemas';
 import { successResponse, errorResponse, validateBody } from '@/lib/utils/api';
+import { getActivePricingRules, priceFlightOffer } from '@/lib/services/pricing-service';
 
 export async function POST(req: NextRequest) {
   try {
@@ -13,7 +14,9 @@ export async function POST(req: NextRequest) {
     }
 
     const result = await flightService.searchFlights(validation.data);
-    return successResponse(result);
+    const rules = await getActivePricingRules();
+    const offers = await Promise.all(result.offers.map((offer) => priceFlightOffer(offer, rules)));
+    return successResponse({ ...result, offers });
   } catch (err) {
     console.error('Flight search error:', err);
     return errorResponse('Something went wrong while searching flights', 'INTERNAL_ERROR', 500);
