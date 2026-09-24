@@ -130,3 +130,23 @@ export async function requireAgent() {
   if (!actor || actor.role !== 'agent') throw new Error('UNAUTHORIZED_AGENT');
   return actor;
 }
+
+
+export async function debugServerActor() {
+  const token = cookies().get('voyago_access_token')?.value || null;
+  if (!token) return { cookiePresent: false, session: null, profile: null, error: 'NO_COOKIE' };
+
+  const session = verifySessionToken(token);
+  if (!session) return { cookiePresent: true, session: null, profile: null, error: 'INVALID_SESSION' };
+
+  const byId = await supabaseAdmin.from('profiles').select('id,email,role,is_active').eq('id', session.sub).maybeSingle();
+  const byEmail = await supabaseAdmin.from('profiles').select('id,email,role,is_active').eq('email', session.email.trim().toLowerCase()).maybeSingle();
+
+  return {
+    cookiePresent: true,
+    session: { sub: session.sub, email: session.email, role: session.role, exp: session.exp },
+    profileById: byId.data || null,
+    profileByEmail: byEmail.data || null,
+    errors: { byId: byId.error?.message || null, byEmail: byEmail.error?.message || null },
+  };
+}
