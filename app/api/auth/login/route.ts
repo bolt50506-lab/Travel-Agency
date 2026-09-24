@@ -71,7 +71,64 @@ export async function POST(req: NextRequest) {
     }
 
     if (!profile) {
-      return errorResponse('This account is inactive. Please contact the agency.', 'AUTH_ACCOUNT_INACTIVE', 403);
+      // Older self-hosted databases may retain local_users while profiles were
+      // deleted. Restore the profile from the authenticated local account
+      // instead of incorrectly reporting the account as inactive.
+      const isKnownAdmin = email === 'admin@travelportal.com';
+      const isKnownAgent = email === 'agent@travelportal.com';
+      const restoredRole = isKnownAdmin ? 'admin' : isKnownAgent ? 'agent' : 'customer';
+      const restoredName = isKnownAdmin
+        ? 'Destino Administrator'
+        : isKnownAgent
+          ? 'Destino Agent'
+          : email.split('@')[0];
+
+      const { data: restoredProfile, error: restoreError } = await supabaseAdmin
+        .from('profiles')
+        .insert({
+          id: account.id,
+          email: account.email,
+          full_name: restoredName,
+          role: restoredRole,
+          is_active: true,
+          email_verified_at: restoredRole === 'customer' ? null : new Date().toISOString(),
+        })
+        .select('id,email,full_name,phone,role,is_active,email_verified_at')
+        .single();
+
+      if (restoreError || !restoredProfile) {
+        console.error('Profile restoration failed:', restoreError);
+        return errorResponse('Unable to restore your account profile. Please try again.', 'AUTH_PROFILE_RESTORE_FAILED', 500);
+      }
+
+      profile = restoredProfile;
+
+      // Ensure restored customers also have the customer record required by
+      // the customer portal and bookings.
+      if (restoredRole === 'customer') {
+        const { data: customer } = await supabaseAdmin
+          .from('customers')
+          .select('id')
+          .eq('user_id', account.id)
+          .maybeSingle();
+
+        if (!customer) {
+          const { error: customerRestoreError } = await supabaseAdmin
+            .from('customers')
+            .insert({
+              user_id: account.id,
+              full_name: restoredName,
+              email: account.email,
+              country: 'PK',
+              nationality: 'Pakistani',
+            });
+
+          if (customerRestoreError) {
+            console.error('Customer record restoration failed:', customerRestoreError);
+            return errorResponse('Unable to restore your customer profile. Please try again.', 'AUTH_CUSTOMER_RESTORE_FAILED', 500);
+          }
+        }
+      }
     }
 
     // Admin accounts are created/managed by the agency and must never be
