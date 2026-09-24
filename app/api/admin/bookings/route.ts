@@ -119,7 +119,7 @@ export async function GET(req: NextRequest) {
     return successResponse({ bookings: rows, total: rows.length });
   } catch (err) {
     if (err instanceof Error && err.message === 'UNAUTHORIZED_ADMIN') {
-      return errorResponse('Staff access required', 'FORBIDDEN', 403);
+      return errorResponse('Admin access required', 'FORBIDDEN', 403);
     }
     console.error('Admin bookings GET error:', err);
     return errorResponse('Unable to load bookings', 'INTERNAL_ERROR', 500);
@@ -257,7 +257,7 @@ export async function POST(req: NextRequest) {
     }, 201);
   } catch (err) {
     if (err instanceof Error && err.message === 'UNAUTHORIZED_ADMIN') {
-      return errorResponse('Staff access required', 'FORBIDDEN', 403);
+      return errorResponse('Admin access required', 'FORBIDDEN', 403);
     }
     console.error('Admin booking creation error:', err);
     return errorResponse(
