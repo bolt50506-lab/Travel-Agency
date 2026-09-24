@@ -122,7 +122,7 @@ async function duffelRequest<T>(path: string, init: RequestInit = {}): Promise<T
 
 function parseDuration(value?: string) {
   if (!value) return 0;
-  const match = value.match(/^P(?:(\\d+)D)?T(?:(\\d+)H)?(?:(\\d+)M)?(?:(\\d+)S)?$/);
+  const match = value.match(/^P(?:(\d+)D)?T(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?$/);
   if (!match) return 0;
   return (
     Number(match[1] || 0) * 1440 +
