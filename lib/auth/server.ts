@@ -1,5 +1,5 @@
 import crypto from 'crypto';
-import { cookies } from 'next/headers';
+import { cookies, headers } from 'next/headers';
 import { supabaseAdmin } from '@/lib/supabase/server';
 
 export type ServerActor = {
@@ -64,8 +64,27 @@ function verifySessionToken(token: string): SessionPayload | null {
   }
 }
 
+function readCookieHeader(cookieHeader: string | null, name: string) {
+  if (!cookieHeader) return null;
+  const prefix = `${name}=`;
+  for (const part of cookieHeader.split(';')) {
+    const value = part.trim();
+    if (value.startsWith(prefix)) return value.slice(prefix.length);
+  }
+  return null;
+}
+
+function readSessionToken() {
+  const cookieToken = cookies().get('voyago_access_token')?.value;
+  if (cookieToken) return cookieToken;
+
+  // Fallback for Node/Next request paths where the cookies helper is not
+  // populated even though the browser sent the Cookie header.
+  return readCookieHeader(headers().get('cookie'), 'voyago_access_token');
+}
+
 export async function getServerActor(): Promise<ServerActor | null> {
-  const token = cookies().get('voyago_access_token')?.value;
+  const token = readSessionToken();
   if (!token) return null;
 
   const session = verifySessionToken(token);
@@ -79,10 +98,13 @@ export async function getServerActor(): Promise<ServerActor | null> {
 
   if (error || !profile || profile.is_active === false) return null;
 
+  const role = profile.role;
+  if (!['customer', 'agent', 'admin'].includes(role)) return null;
+
   return {
-    id: session.sub,
-    email: session.email,
-    role: profile.role || session.role,
+    id: profile.id || session.sub,
+    email: profile.email || session.email,
+    role,
     profile,
   };
 }
