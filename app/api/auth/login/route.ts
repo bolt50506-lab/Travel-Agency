@@ -37,127 +37,28 @@ export async function POST(req: NextRequest) {
       return errorResponse('Invalid email or password', 'AUTH_INVALID_CREDENTIALS', 401);
     }
 
-    let { data: profile } = await supabaseAdmin
+    const { data: profile } = await supabaseAdmin
       .from('profiles')
       .select('id,email,full_name,phone,role,is_active,email_verified_at')
       .eq('id', account.id)
       .maybeSingle();
 
-    // Recover staff profiles from older self-hosted database seeds where the
-    // local user survived but its profile row was deleted.
-    if (!profile && (email === 'admin@travelportal.com' || email === 'agent@travelportal.com')) {
-      const staffRole = email === 'admin@travelportal.com' ? 'admin' : 'agent';
-      const staffName = staffRole === 'admin' ? 'Destino Administrator' : 'Destino Agent';
-
-      const { data: restoredProfile, error: restoreError } = await supabaseAdmin
-        .from('profiles')
-        .insert({
-          id: account.id,
-          email: account.email,
-          full_name: staffName,
-          role: staffRole,
-          is_active: true,
-          email_verified_at: new Date().toISOString(),
-        })
-        .select('id,email,full_name,phone,role,is_active,email_verified_at')
-        .single();
-
-      if (!restoreError && restoredProfile) {
-        profile = restoredProfile;
-      } else {
-        console.error('Staff profile restoration failed:', restoreError);
-        return errorResponse('Unable to restore the staff account. Please try again.', 'AUTH_STAFF_PROFILE_RESTORE_FAILED', 500);
-      }
-    }
-
-    if (!profile) {
-      // Older self-hosted databases may retain local_users while profiles were
-      // deleted. Restore the profile from the authenticated local account
-      // instead of incorrectly reporting the account as inactive.
-      const isKnownAdmin = email === 'admin@travelportal.com';
-      const isKnownAgent = email === 'agent@travelportal.com';
-      const restoredRole = isKnownAdmin ? 'admin' : isKnownAgent ? 'agent' : 'customer';
-      const restoredName = isKnownAdmin
-        ? 'Destino Administrator'
-        : isKnownAgent
-          ? 'Destino Agent'
-          : email.split('@')[0];
-
-      const { data: restoredProfile, error: restoreError } = await supabaseAdmin
-        .from('profiles')
-        .insert({
-          id: account.id,
-          email: account.email,
-          full_name: restoredName,
-          role: restoredRole,
-          is_active: true,
-          email_verified_at: restoredRole === 'customer' ? null : new Date().toISOString(),
-        })
-        .select('id,email,full_name,phone,role,is_active,email_verified_at')
-        .single();
-
-      if (restoreError || !restoredProfile) {
-        console.error('Profile restoration failed:', restoreError);
-        return errorResponse('Unable to restore your account profile. Please try again.', 'AUTH_PROFILE_RESTORE_FAILED', 500);
-      }
-
-      profile = restoredProfile;
-
-      // Ensure restored customers also have the customer record required by
-      // the customer portal and bookings.
-      if (restoredRole === 'customer') {
-        const { data: customer } = await supabaseAdmin
-          .from('customers')
-          .select('id')
-          .eq('user_id', account.id)
-          .maybeSingle();
-
-        if (!customer) {
-          const { error: customerRestoreError } = await supabaseAdmin
-            .from('customers')
-            .insert({
-              user_id: account.id,
-              full_name: restoredName,
-              email: account.email,
-              country: 'PK',
-              nationality: 'Pakistani',
-            });
-
-          if (customerRestoreError) {
-            console.error('Customer record restoration failed:', customerRestoreError);
-            return errorResponse('Unable to restore your customer profile. Please try again.', 'AUTH_CUSTOMER_RESTORE_FAILED', 500);
-          }
-        }
-      }
-    }
-
-    // Admin accounts are created/managed by the agency and must never be
-    // stranded by an accidental inactive flag. Repair the flag on login so
-    // the admin can regain access even when an older database seed left it off.
-    if (profile.role === 'admin' && profile.is_active === false) {
-      const { data: repairedProfile, error: repairError } = await supabaseAdmin
-        .from('profiles')
-        .update({ is_active: true, updated_at: new Date().toISOString() })
-        .eq('id', profile.id)
-        .select('id,email,full_name,phone,role,is_active,email_verified_at')
-        .single();
-
-      if (repairError || !repairedProfile) {
-        console.error('Admin account activation repair failed:', repairError);
-        return errorResponse('Unable to activate the admin account. Please try again.', 'AUTH_ADMIN_ACTIVATION_FAILED', 500);
-      }
-
-      profile = repairedProfile;
-    }
-
-    if (profile.is_active === false) {
+    if (!profile || profile.is_active === false) {
       return errorResponse('This account is inactive. Please contact the agency.', 'AUTH_ACCOUNT_INACTIVE', 403);
     }
 
-    if (profile.role === 'customer' && !profile.email_verified_at) {
-      return errorResponse('Please verify your email address before logging in. Check your inbox for the verification link.', 'AUTH_EMAIL_NOT_VERIFIED', 403);
+    const requestedPortal = validation.data.portal;
+    if (requestedPortal && profile.role !== requestedPortal) {
+      return errorResponse('This account is not authorized for this portal.', 'AUTH_WRONG_PORTAL', 403);
     }
 
+    if (profile.role === 'customer' && !profile.email_verified_at) {
+      return errorResponse(
+        'Please verify your email address before logging in. Check your inbox for the verification link.',
+        'AUTH_EMAIL_NOT_VERIFIED',
+        403
+      );
+    }
 
     await supabaseAdmin.from('local_users').update({ last_login_at: new Date().toISOString() }).eq('id', account.id);
 
@@ -171,30 +72,9 @@ export async function POST(req: NextRequest) {
     // This keeps local production testing on http://localhost working while
     // still using Secure cookies behind HTTPS/Cloudflare in real deployments.
     const forwardedProto = req.headers.get('x-forwarded-proto')?.split(',')[0]?.trim().toLowerCase();
-    const hostname = req.headers.get('host')?.split(':')[0]?.trim().toLowerCase() || '';
-    // Local HTTP must never receive a Secure cookie. In production, HTTPS
-    // requests remain Secure. This also handles local `next start` correctly
-    // when NEXT_PUBLIC_APP_URL happens to use HTTPS.
-    const isLocalHost = hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1';
-    const isSecureRequest = !isLocalHost && (
-      forwardedProto === 'https' ||
-      (!forwardedProto && req.nextUrl.protocol === 'https:')
-    );
+    const isSecureRequest = forwardedProto === 'https' || req.nextUrl.protocol === 'https:';
 
-    const redirectTo = profile.role === 'admin' ? '/admin' : profile.role === 'agent' ? '/agent' : '/';
-
-    // Attach the auth cookie directly to the response. This is more reliable
-    // with Next.js 13 production builds than mutating the request cookie store
-    // and guarantees the Set-Cookie header is present on the login response.
-    const response = successResponse({
-      user: { id: account.id, email: account.email, profile },
-      redirectTo,
-      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-    });
-
-    response.cookies.set({
-      name: 'voyago_access_token',
-      value: token,
+    cookies().set('voyago_access_token', token, {
       httpOnly: true,
       secure: isSecureRequest,
       sameSite: 'lax',
@@ -202,8 +82,10 @@ export async function POST(req: NextRequest) {
       maxAge: 7 * 24 * 60 * 60,
     });
 
-    response.headers.set('Cache-Control', 'no-store');
-    return response;
+    return successResponse({
+      user: { id: account.id, email: account.email, profile },
+      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+    });
   } catch (err) {
     console.error('Login error:', err);
     return errorResponse('Something went wrong during login', 'INTERNAL_ERROR', 500);
