@@ -1,3 +1,6 @@
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { AdminSidebar } from '@/components/admin/admin-sidebar';
@@ -13,7 +16,12 @@ export default async function AdminLayout({ children }: { children: React.ReactN
       <AdminSidebar />
       <div className="md:ml-64">
         <div className="sticky top-0 z-30 border-b border-border/70 bg-background/90 px-4 py-3 backdrop-blur md:hidden">
-          <div className="flex items-center gap-3"><BrandLogo compact /><div className="min-w-0"><p className="text-sm font-semibold">Destino Travels</p><p className="text-[10px] text-muted-foreground">Travel operations</p></div>
+          <div className="flex items-center gap-3">
+            <BrandLogo compact />
+            <div className="min-w-0">
+              <p className="text-sm font-semibold">Destino Travels</p>
+              <p className="text-[10px] text-muted-foreground">Travel operations</p>
+            </div>
             <Link href="/admin/bookings" className="ml-auto rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground">Bookings</Link>
           </div>
           <div className="mt-3 flex gap-1 overflow-x-auto pb-0.5">
