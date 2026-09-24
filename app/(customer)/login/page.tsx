@@ -28,7 +28,7 @@ export default function LoginPage() {
       const res = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password, portal: 'customer' }),
+        body: JSON.stringify({ email, password }),
       });
       const data = await res.json();
 
@@ -36,12 +36,9 @@ export default function LoginPage() {
         throw new Error(data.error || 'Login failed');
       }
 
+      const redirectTo = typeof data?.redirectTo === 'string' ? data.redirectTo : '/';
       toast.success('Welcome back! You are now logged in.');
-      // Customer login always stays on the public Destino Travels website.
-      // The API enforces portal === "customer", so staff accounts cannot
-      // enter through this login. Customer data is resolved from the
-      // authenticated user's ID on protected customer endpoints.
-      router.push('/');
+      router.push(redirectTo);
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong');
