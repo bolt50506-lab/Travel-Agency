@@ -67,7 +67,7 @@ CREATE TABLE IF NOT EXISTS agencies (
 
 CREATE TABLE IF NOT EXISTS agents (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id uuid NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  user_id uuid NOT NULL UNIQUE REFERENCES profiles(id) ON DELETE CASCADE,
   agency_id uuid REFERENCES agencies(id) ON DELETE SET NULL,
   agent_code text UNIQUE,
   commission_rate numeric(5,2) DEFAULT 0,
@@ -79,7 +79,7 @@ CREATE TABLE IF NOT EXISTS agents (
 
 CREATE TABLE IF NOT EXISTS customers (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id uuid REFERENCES profiles(id) ON DELETE SET NULL,
+  user_id uuid UNIQUE REFERENCES profiles(id) ON DELETE SET NULL,
   full_name text NOT NULL,
   email text,
   phone text,
