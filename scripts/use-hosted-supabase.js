@@ -76,7 +76,7 @@ async function main() {
     'POSTGREST_JWT_SECRET=',
     'LOCAL_AUTH_SECRET=' + quote(localAuthSecret),
     'NEXT_PUBLIC_APP_URL=' + quote(current.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'),
-    'FLIGHT_PROVIDER=' + quote(current.FLIGHT_PROVIDER || 'duffel'),
+    'FLIGHT_PROVIDER="duffel"',
     'ALLOW_MOCK_PROVIDERS=false',
     'DUFFEL_API_KEY=' + quote(duffelKey),
     'HOTEL_PROVIDER=' + quote(current.HOTEL_PROVIDER || 'mock'),
