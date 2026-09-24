@@ -2123,3 +2123,44 @@ GRANT ALL PRIVILEGES ON public.customer_wallets TO service_role;
 GRANT ALL PRIVILEGES ON public.wallet_topups TO service_role;
 
 NOTIFY pgrst, 'reload schema';
+
+-- ===== LOCAL AUTH DEMO ACCOUNTS (SELF-HOSTED) =====
+-- Keep the local Docker environment immediately usable after a fresh or existing
+-- database initialization. These credentials match README.md demo accounts.
+DO $$
+DECLARE
+  admin_id uuid := '11111111-1111-4111-8111-111111111111';
+  agent_id uuid := '22222222-2222-4222-8222-222222222222';
+  customer_id uuid := '33333333-3333-4333-8333-333333333333';
+BEGIN
+  INSERT INTO public.local_users (id, email, password_hash)
+  VALUES
+    (admin_id, 'admin@travelportal.com', 'scrypt$16384$8$1$tf62dCgx9-GNts-twytJqQ$6b0JizVaI34T3hzPSyi7WfACnbV83z-ahH6TZXlOmkN4PjswcupwHFWYMcj92zKm5BlwZBmydcBXoFSB61bipg'),
+    (agent_id, 'agent@travelportal.com', 'scrypt$16384$8$1$GqoRoBW4KJ8DjUaHv8rC8g$JTq8W_s4m05g4HPhKCh9lD8UOKsR4Df1CEVIdrfAsHHIhs_46A9YYSnP92DWiopcqoStqBUzc3XioOCgaixlOw'),
+    (customer_id, 'john.smith@example.com', 'scrypt$16384$8$1$zvCU6xMW_LsJJPlEWs3eng$aUO-VXkpPs0cKz10P0mC-qfNWCJIxccihK_Om4Z1h1agfNHL4pZ2_3BaoFS1nGMHQcXDsT3-1VgsTaHq8VoB9g')
+  ON CONFLICT (id) DO UPDATE
+    SET email = EXCLUDED.email,
+        password_hash = EXCLUDED.password_hash,
+        updated_at = now();
+
+  INSERT INTO public.profiles (id, email, full_name, role, is_active, email_verified_at)
+  VALUES
+    (admin_id, 'admin@travelportal.com', 'Destino Administrator', 'admin', true, now()),
+    (agent_id, 'agent@travelportal.com', 'Destino Agent', 'agent', true, now()),
+    (customer_id, 'john.smith@example.com', 'John Smith', 'customer', true, now())
+  ON CONFLICT (id) DO UPDATE
+    SET email = EXCLUDED.email,
+        full_name = EXCLUDED.full_name,
+        role = EXCLUDED.role,
+        is_active = true,
+        email_verified_at = COALESCE(public.profiles.email_verified_at, EXCLUDED.email_verified_at),
+        updated_at = now();
+
+  INSERT INTO public.agents (user_id, agent_code, commission_rate, is_active)
+  VALUES (agent_id, 'AG-DEMO01', 0, true)
+  ON CONFLICT (user_id) DO UPDATE SET is_active = true;
+
+  INSERT INTO public.customers (user_id, full_name, email, country, nationality)
+  VALUES (customer_id, 'John Smith', 'john.smith@example.com', 'PK', 'Pakistani')
+  ON CONFLICT (user_id) DO UPDATE SET email = EXCLUDED.email;
+END $$;
