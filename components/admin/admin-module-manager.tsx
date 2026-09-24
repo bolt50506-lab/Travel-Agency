@@ -30,7 +30,13 @@ export default function AdminModuleManager({
     setLoading(true);
     try {
       const response = await fetch(
-        '/api/admin/modules?module=' + encodeURIComponent(module) + '&search=' + encodeURIComponent(search)
+        '/api/admin/modules?module=' + encodeURIComponent(module) + '&search=' + encodeURIComponent(search),
+        {
+          method: 'GET',
+          credentials: 'same-origin',
+          cache: 'no-store',
+          headers: { Accept: 'application/json' },
+        }
       );
       const result = await response.json();
       if (!response.ok) throw new Error(result.error || 'Unable to load');
@@ -46,6 +52,11 @@ export default function AdminModuleManager({
     void load();
   }, [module]);
 
+  useEffect(() => {
+    const timer = window.setTimeout(() => void load(), 250);
+    return () => window.clearTimeout(timer);
+  }, [search]);
+
   async function save() {
     try {
       const method = editingId ? 'PATCH' : 'POST';
@@ -54,7 +65,9 @@ export default function AdminModuleManager({
         : { module, data: form };
       const response = await fetch('/api/admin/modules', {
         method,
-        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        cache: 'no-store',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
         body: JSON.stringify(payload),
       });
       const result = await response.json();
