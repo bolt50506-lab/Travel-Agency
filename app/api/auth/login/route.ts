@@ -47,11 +47,9 @@ export async function POST(req: NextRequest) {
       return errorResponse('This account is inactive. Please contact the agency.', 'AUTH_ACCOUNT_INACTIVE', 403);
     }
 
-    const requestedPortal = validation.data.portal;
-    if (requestedPortal && profile.role !== requestedPortal) {
-      return errorResponse('This account is not authorized for this portal.', 'AUTH_WRONG_PORTAL', 403);
-    }
-
+    // The login endpoint authenticates the account; the destination portal is
+    // determined from the current database role. Portal pages/API routes enforce
+    // authorization separately, so a stale/incorrect portal hint can never grant access.
     if (profile.role === 'customer' && !profile.email_verified_at) {
       return errorResponse(
         'Please verify your email address before logging in. Check your inbox for the verification link.',
@@ -82,8 +80,11 @@ export async function POST(req: NextRequest) {
       maxAge: 7 * 24 * 60 * 60,
     });
 
+    const redirectTo = profile.role === 'admin' ? '/admin' : profile.role === 'agent' ? '/agent' : '/';
+
     return successResponse({
       user: { id: account.id, email: account.email, profile },
+      redirectTo,
       expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
     });
   } catch (err) {
