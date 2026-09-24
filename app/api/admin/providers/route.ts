@@ -1,6 +1,9 @@
 import { successResponse } from '@/lib/utils/api';
 import { requireAdmin } from '@/lib/auth/server';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export async function GET() {
   try {
     await requireAdmin();
