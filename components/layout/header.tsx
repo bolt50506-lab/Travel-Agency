@@ -12,6 +12,7 @@ const navLinks = [
   { href: '/hotels', label: 'Hotels', icon: Hotel },
   { href: '/umrah', label: 'Umrah', icon: Sparkles },
   { href: '/bookings', label: 'My bookings', icon: Bookmark },
+  { href: '/wallet', label: 'Wallet', icon: WalletCards },
   { href: '/help', label: 'Help', icon: HelpCircle },
 ];
 
