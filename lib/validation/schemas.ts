@@ -1,9 +1,24 @@
 import { z } from 'zod';
 
+const iataCode = z
+  .string()
+  .trim()
+  .transform((value) => value.toUpperCase())
+  .refine((value) => /^[A-Z]{3}$/.test(value), 'Use a valid 3-letter IATA airport code');
+
+const flightSlice = z.object({
+  origin: iataCode,
+  destination: iataCode,
+  date: z.string().min(1, 'Flight date is required'),
+}).refine(
+  (data) => data.origin !== data.destination,
+  { message: 'Origin and destination must be different', path: ['destination'] }
+);
+
 export const flightSearchSchema = z.object({
   tripType: z.enum(['round-trip', 'one-way', 'multi-city']),
-  origin: z.string().min(3, 'Origin is required'),
-  destination: z.string().min(3, 'Destination is required'),
+  origin: iataCode,
+  destination: iataCode,
   departDate: z.string().min(1, 'Departure date is required'),
   returnDate: z.string().optional(),
   passengers: z.object({
@@ -12,19 +27,20 @@ export const flightSearchSchema = z.object({
     infants: z.number().int().min(0).max(4),
   }),
   cabinClass: z.enum(['economy', 'premium-economy', 'business', 'first']),
-  multiCitySegments: z
-    .array(
-      z.object({
-        origin: z.string(),
-        destination: z.string(),
-        date: z.string(),
-      })
-    )
-    .optional(),
-}).refine(
-  (data) => data.tripType !== 'round-trip' || !!data.returnDate,
-  { message: 'Return date is required for round-trip', path: ['returnDate'] }
-);
+  multiCitySegments: z.array(flightSlice).optional(),
+})
+  .refine(
+    (data) => data.origin !== data.destination,
+    { message: 'Origin and destination must be different', path: ['destination'] }
+  )
+  .refine(
+    (data) => data.tripType !== 'round-trip' || !!data.returnDate,
+    { message: 'Return date is required for round-trip', path: ['returnDate'] }
+  )
+  .refine(
+    (data) => data.tripType !== 'round-trip' || !data.returnDate || data.returnDate >= data.departDate,
+    { message: 'Return date must be on or after the departure date', path: ['returnDate'] }
+  );
 
 export const flightRevalidateSchema = z.object({
   offerId: z.string().min(1),
