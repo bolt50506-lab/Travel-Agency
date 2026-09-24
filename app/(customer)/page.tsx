@@ -18,14 +18,24 @@ export default function Home() {
   return (
     <div className="flex flex-col">
       <section className="relative isolate overflow-hidden bg-[#062f35]">
-        <div
-          className="absolute inset-0 bg-cover bg-center"
-          style={{
-            backgroundImage:
-              'url(https://images.pexels.com/photos/33976726/pexels-photo-33976726.jpeg?auto=compress&cs=tinysrgb&w=1920)',
-          }}
-        />
-        <div className="absolute inset-0 bg-gradient-to-b from-[#062f35]/90 via-[#063b42]/75 to-[#021f24]/95" />
+        <div className="absolute inset-0 overflow-hidden" aria-hidden="true">
+          <div
+            className="absolute inset-[-6%] bg-cover bg-center bg-no-repeat animate-hero-photo-a"
+            style={{
+              backgroundImage:
+                'url(https://images.unsplash.com/photo-1553962949-b4c63c45337c?auto=format&fit=crop&w=2400&q=88)',
+            }}
+          />
+          <div
+            className="absolute inset-[-6%] bg-cover bg-center bg-no-repeat animate-hero-photo-b"
+            style={{
+              backgroundImage:
+                'url(https://images.pexels.com/photos/33976726/pexels-photo-33976726.jpeg?auto=compress&cs=tinysrgb&w=2400)',
+            }}
+          />
+          <div className="absolute inset-0 bg-gradient-to-b from-[#062f35]/72 via-[#063b42]/58 to-[#021f24]/92" />
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_25%,rgba(255,255,255,.12),transparent_35%)]" />
+        </div>
         <div className="absolute -left-24 top-10 h-72 w-72 rounded-full bg-[#20b8b0]/20 blur-3xl animate-float-slow" />
         <div className="absolute right-0 top-0 h-96 w-96 rounded-full bg-[#d4af37]/18 blur-3xl animate-drift" />
         <div className="absolute bottom-0 left-1/3 h-64 w-64 rounded-full bg-[#20b8b0]/15 blur-3xl animate-float-slow" />
