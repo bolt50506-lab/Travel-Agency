@@ -171,7 +171,15 @@ export async function POST(req: NextRequest) {
     // This keeps local production testing on http://localhost working while
     // still using Secure cookies behind HTTPS/Cloudflare in real deployments.
     const forwardedProto = req.headers.get('x-forwarded-proto')?.split(',')[0]?.trim().toLowerCase();
-    const isSecureRequest = forwardedProto === 'https' || req.nextUrl.protocol === 'https:';
+    const hostname = req.headers.get('host')?.split(':')[0]?.trim().toLowerCase() || '';
+    // Local HTTP must never receive a Secure cookie. In production, HTTPS
+    // requests remain Secure. This also handles local `next start` correctly
+    // when NEXT_PUBLIC_APP_URL happens to use HTTPS.
+    const isLocalHost = hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1';
+    const isSecureRequest = !isLocalHost && (
+      forwardedProto === 'https' ||
+      (!forwardedProto && req.nextUrl.protocol === 'https:')
+    );
 
     cookies().set('voyago_access_token', token, {
       httpOnly: true,
