@@ -253,27 +253,47 @@ export class DuffelFlightProvider implements IFlightProvider {
   readonly isMock = false;
 
   async search(query: FlightSearchQuery): Promise<FlightSearchResponse> {
+    const origin = query.origin.trim().toUpperCase();
+    const destination = query.destination.trim().toUpperCase();
+
+    if (origin === destination) {
+      throw new Error('DUFFEL_INVALID_ROUTE: Origin and destination must be different');
+    }
+
     const slices = [
       {
-        origin: query.origin.toUpperCase(),
-        destination: query.destination.toUpperCase(),
+        origin,
+        destination,
         departure_date: query.departDate,
       },
       ...(query.tripType === 'round-trip' && query.returnDate
         ? [
             {
-              origin: query.destination.toUpperCase(),
-              destination: query.origin.toUpperCase(),
+              origin: destination,
+              destination: origin,
               departure_date: query.returnDate,
             },
           ]
         : []),
       ...(query.tripType === 'multi-city'
-        ? (query.multiCitySegments || []).map((segment) => ({
-            origin: segment.origin.toUpperCase(),
-            destination: segment.destination.toUpperCase(),
-            departure_date: segment.date,
-          }))
+        ? (query.multiCitySegments || []).map((segment) => {
+            const segmentOrigin = segment.origin.trim().toUpperCase();
+            const segmentDestination = segment.destination.trim().toUpperCase();
+
+            if (segmentOrigin === segmentDestination) {
+              throw new Error(
+                'DUFFEL_INVALID_ROUTE: Multi-city segment origin and destination must be different (' +
+                  segmentOrigin +
+                  ')'
+              );
+            }
+
+            return {
+              origin: segmentOrigin,
+              destination: segmentDestination,
+              departure_date: segment.date,
+            };
+          })
         : []),
     ];
 
