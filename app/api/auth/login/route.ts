@@ -16,6 +16,18 @@ function verifyPassword(password: string, stored: string) {
   return a.length === b.length && crypto.timingSafeEqual(a, b);
 }
 
+function sessionCookie(token: string, secure: boolean) {
+  const attributes = [
+    `voyago_access_token=${encodeURIComponent(token)}`,
+    'Path=/',
+    'HttpOnly',
+    'SameSite=Lax',
+    `Max-Age=${7 * 24 * 60 * 60}`,
+  ];
+  if (secure) attributes.push('Secure');
+  return attributes.join('; ');
+}
+
 export async function POST(req: NextRequest) {
   try {
     const validation = validateBody(loginSchema, await req.json());
@@ -23,7 +35,10 @@ export async function POST(req: NextRequest) {
 
     const email = validation.data.email.trim().toLowerCase();
     const { data: account, error: accountError } = await supabaseAdmin
-      .from('local_users').select('id,email,password_hash').eq('email', email).maybeSingle();
+      .from('local_users')
+      .select('id,email,password_hash')
+      .eq('email', email)
+      .maybeSingle();
 
     if (accountError || !account || !verifyPassword(validation.data.password, account.password_hash)) {
       return errorResponse('Invalid email or password', 'AUTH_INVALID_CREDENTIALS', 401);
@@ -32,7 +47,8 @@ export async function POST(req: NextRequest) {
     const { data: profile, error: profileError } = await supabaseAdmin
       .from('profiles')
       .select('id,email,full_name,phone,role,is_active,email_verified_at')
-      .eq('id', account.id).maybeSingle();
+      .eq('id', account.id)
+      .maybeSingle();
 
     if (profileError || !profile || profile.is_active === false) {
       return errorResponse('This account is inactive or its profile is unavailable. Please contact the agency.', 'AUTH_ACCOUNT_INACTIVE', 403);
@@ -59,17 +75,10 @@ export async function POST(req: NextRequest) {
       expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
     });
 
-    // Set the cookie on the response itself so browser fetch() reliably stores it.
-    response.cookies.set({
-      name: 'voyago_access_token',
-      value: token,
-      httpOnly: true,
-      secure: isSecureRequest,
-      sameSite: 'lax',
-      path: '/',
-      maxAge: 7 * 24 * 60 * 60,
-    });
-    response.headers.set('Cache-Control', 'no-store');
+    // Explicit Set-Cookie avoids framework helper differences and makes the
+    // browser session deterministic on both localhost HTTP and HTTPS.
+    response.headers.set('Set-Cookie', sessionCookie(token, isSecureRequest));
+    response.headers.set('Cache-Control', 'no-store, private');
     return response;
   } catch (err) {
     console.error('Login error:', err);
