@@ -182,22 +182,54 @@ function mapSegment(segment: DuffelSegment, cabinClass: CabinClass): FlightSegme
   };
 }
 
-function mapOffer(offer: DuffelOffer, cabinClass: CabinClass): FlightOffer {
+const FX_CACHE = new Map<string, { rate: number; expiresAt: number }>();
+
+async function toPkr(amount: number, currency: string): Promise<number> {
+  if (!Number.isFinite(amount)) return 0;
+  const normalized = (currency || 'PKR').toUpperCase();
+  if (normalized === 'PKR') return amount;
+
+  const cached = FX_CACHE.get(normalized);
+  if (cached && cached.expiresAt > Date.now()) return amount * cached.rate;
+
+  const response = await fetch(
+    `https://open.er-api.com/v6/latest/${encodeURIComponent(normalized)}`,
+    { cache: 'no-store' }
+  );
+  if (!response.ok) throw new Error(`FX_RATE_UNAVAILABLE: ${normalized}/PKR`);
+
+  const data = (await response.json()) as { rates?: Record<string, number> };
+  const rate = Number(data.rates?.PKR);
+  if (!Number.isFinite(rate) || rate <= 0) {
+    throw new Error(`FX_RATE_UNAVAILABLE: ${normalized}/PKR`);
+  }
+
+  FX_CACHE.set(normalized, { rate, expiresAt: Date.now() + 5 * 60 * 1000 });
+  return amount * rate;
+}
+
+async function mapOffer(offer: DuffelOffer, cabinClass: CabinClass): Promise<FlightOffer> {
   const segments = offer.slices.flatMap((slice) =>
     slice.segments.map((segment) => mapSegment(segment, cabinClass))
   );
   const totalDuration = segments.reduce((sum, segment) => sum + segment.duration, 0);
 
-  const total = Number(offer.total_amount);
-  const base = Number(offer.base_amount ?? offer.total_amount);
-  const taxes = Number(offer.tax_amount ?? Math.max(0, total - base));
+  const total = await toPkr(Number(offer.total_amount), offer.total_currency);
+  const base = await toPkr(
+    Number(offer.base_amount ?? offer.total_amount),
+    offer.base_currency || offer.total_currency
+  );
+  const taxes = await toPkr(
+    Number(offer.tax_amount ?? Math.max(0, Number(offer.total_amount) - Number(offer.base_amount ?? offer.total_amount))),
+    offer.tax_currency || offer.total_currency
+  );
 
   return {
     id: offer.id,
     segments,
-    totalPrice: { amount: total, currency: offer.total_currency },
-    basePrice: { amount: base, currency: offer.base_currency || offer.total_currency },
-    taxesAndFees: { amount: taxes, currency: offer.tax_currency || offer.total_currency },
+    totalPrice: { amount: Math.round(total), currency: 'PKR' },
+    basePrice: { amount: Math.round(base), currency: 'PKR' },
+    taxesAndFees: { amount: Math.round(taxes), currency: 'PKR' },
     stops: Math.max(0, segments.length - offer.slices.length),
     totalDuration,
     refundable: Boolean(offer.conditions?.refund_before_departure?.allowed),
@@ -312,9 +344,11 @@ export class DuffelFlightProvider implements IFlightProvider {
       }
     );
 
-    const offers = (response.data.offers || [])
-      .filter((offer) => offer.id && Array.isArray(offer.slices))
-      .map((offer) => mapOffer(offer, cabinFromDuffel(query.cabinClass)));
+    const offers = await Promise.all(
+      (response.data.offers || [])
+        .filter((offer) => offer.id && Array.isArray(offer.slices))
+        .map((offer) => mapOffer(offer, cabinFromDuffel(query.cabinClass)))
+    );
 
     const expiresAt =
       offers.reduce(
@@ -335,7 +369,7 @@ export class DuffelFlightProvider implements IFlightProvider {
       `/air/offers/${encodeURIComponent(request.offerId)}`
     );
 
-    const offer = mapOffer(response.data, 'economy');
+    const offer = await mapOffer(response.data, 'economy');
     const expiresAt = new Date(response.data.expires_at).getTime();
     const expired = !Number.isFinite(expiresAt) || expiresAt <= Date.now();
 
@@ -402,7 +436,7 @@ export class DuffelFlightProvider implements IFlightProvider {
     );
 
     const order = orderResponse.data;
-    const normalizedOffer = mapOffer(offer, 'economy');
+    const normalizedOffer = await mapOffer(offer, 'economy');
 
     return {
       bookingReference: order.booking_reference || order.id,
