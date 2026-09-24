@@ -78,8 +78,32 @@
 
 .animate-float-slow { animation: float-slow 7s ease-in-out infinite; }
 .animate-drift { animation: drift 12s ease-in-out infinite; }
+@keyframes hero-photo-a {
+  0%, 100% { opacity: 1; transform: scale(1.03) translate3d(-1%, 0, 0); }
+  45% { opacity: 1; transform: scale(1.10) translate3d(1.5%, -1%, 0); }
+  50% { opacity: 0; transform: scale(1.11) translate3d(2%, -1.5%, 0); }
+  95% { opacity: 0; transform: scale(1.04) translate3d(-1%, .5%, 0); }
+}
+
+@keyframes hero-photo-b {
+  0%, 45% { opacity: 0; transform: scale(1.08) translate3d(2%, 1%, 0); }
+  50% { opacity: 1; transform: scale(1.03) translate3d(0, 0, 0); }
+  92% { opacity: 1; transform: scale(1.10) translate3d(-1.5%, -1%, 0); }
+  100% { opacity: 0; transform: scale(1.11) translate3d(-2%, -1.5%, 0); }
+}
+
+.animate-hero-photo-a,
+.animate-hero-photo-b {
+  will-change: transform, opacity;
+  animation-duration: 18s;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+}
+
+.animate-hero-photo-b { animation-delay: -9s; }
+
 
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
-  .animate-float-slow, .animate-drift { animation: none; }
+  .animate-float-slow, .animate-drift, .animate-hero-photo-a, .animate-hero-photo-b { animation: none; }
 }
