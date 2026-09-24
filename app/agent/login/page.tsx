@@ -1,5 +1,5 @@
-import { PortalLogin } from '@/components/auth/portal-login';
+import { redirect } from 'next/navigation';
 
 export default function AgentLoginPage() {
-  return <PortalLogin portal="agent" />;
+  redirect('/login');
 }
