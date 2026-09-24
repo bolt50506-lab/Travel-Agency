@@ -12,8 +12,8 @@ const fs = require('fs');
 function parseEnvFile(filePath) {
   if (!fs.existsSync(filePath)) return {};
   const values = {};
-  for (const rawLine of fs.readFileSync(filePath, 'utf8').split(/\r?
-/)) {
+  const text = fs.readFileSync(filePath, 'utf8');
+  for (const rawLine of text.split(String.fromCharCode(10))) {
     const line = rawLine.trim();
     if (!line || line.startsWith('#')) continue;
     const match = line.match(/^([A-Za-z_][A-Za-z0-9_]*)=(.*)$/);
@@ -26,7 +26,6 @@ function parseEnvFile(filePath) {
   }
   return values;
 }
-
 function quote(value) {
   return JSON.stringify(String(value));
 }
