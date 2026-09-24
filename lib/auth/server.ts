@@ -88,17 +88,18 @@ function readCookieHeader(cookieHeader: string | null, name: string) {
   return null;
 }
 
-function readSessionToken() {
-  // Prefer the raw request Cookie header. This avoids differences between
-  // Next.js cookie parsing in Node/standalone builds and the login response.
-  const rawHeaderToken = readCookieHeader(headers().get('cookie'), 'voyago_access_token');
+function readSessionToken(cookieHeader?: string | null) {
+  // When a route handler provides the request Cookie header, use that exact
+  // header first. This removes any ambiguity between request-scoped Next.js
+  // cookie state and the actual browser request reaching the API route.
+  const rawHeaderToken = readCookieHeader(cookieHeader ?? headers().get('cookie'), 'voyago_access_token');
   if (rawHeaderToken) return rawHeaderToken;
 
   return cookies().get('voyago_access_token')?.value || null;
 }
 
-export async function getServerActor(): Promise<ServerActor | null> {
-  const token = readSessionToken();
+export async function getServerActor(cookieHeader?: string | null): Promise<ServerActor | null> {
+  const token = readSessionToken(cookieHeader);
   if (!token) return null;
 
   const session = verifySessionToken(token);
@@ -140,20 +141,20 @@ export async function getServerActor(): Promise<ServerActor | null> {
   };
 }
 
-export async function requireStaff() {
-  const actor = await getServerActor();
+export async function requireStaff(cookieHeader?: string | null) {
+  const actor = await getServerActor(cookieHeader);
   if (!actor || !['admin', 'agent'].includes(actor.role)) throw new Error('UNAUTHORIZED_STAFF');
   return actor;
 }
 
-export async function requireAdmin() {
-  const actor = await getServerActor();
+export async function requireAdmin(cookieHeader?: string | null) {
+  const actor = await getServerActor(cookieHeader);
   if (!actor || actor.role !== 'admin') throw new Error('UNAUTHORIZED_ADMIN');
   return actor;
 }
 
-export async function requireAgent() {
-  const actor = await getServerActor();
+export async function requireAgent(cookieHeader?: string | null) {
+  const actor = await getServerActor(cookieHeader);
   if (!actor || actor.role !== 'agent') throw new Error('UNAUTHORIZED_AGENT');
   return actor;
 }
