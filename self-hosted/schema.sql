@@ -2194,11 +2194,25 @@ BEGIN
         email_verified_at = COALESCE(public.profiles.email_verified_at, EXCLUDED.email_verified_at),
         updated_at = now();
 
-  INSERT INTO public.agents (user_id, agent_code, commission_rate, is_active)
-  VALUES (agent_id, 'AG-DEMO01', 0, true)
-  ON CONFLICT (user_id) DO UPDATE SET is_active = true;
+  UPDATE public.agents
+  SET is_active = true, user_id = agent_id
+  WHERE user_id = agent_id OR agent_code = 'AG-DEMO01';
 
-  INSERT INTO public.customers (user_id, full_name, email, country, nationality)
-  VALUES (customer_id, 'John Smith', 'john.smith@example.com', 'PK', 'Pakistani')
-  ON CONFLICT (user_id) DO UPDATE SET email = EXCLUDED.email;
+  IF NOT FOUND THEN
+    INSERT INTO public.agents (user_id, agent_code, commission_rate, is_active)
+    VALUES (agent_id, 'AG-DEMO01', 0, true);
+  END IF;
+
+  UPDATE public.customers
+  SET email = 'john.smith@example.com',
+      full_name = 'John Smith',
+      country = 'PK',
+      nationality = 'Pakistani',
+      user_id = customer_id
+  WHERE user_id = customer_id OR email = 'john.smith@example.com';
+
+  IF NOT FOUND THEN
+    INSERT INTO public.customers (user_id, full_name, email, country, nationality)
+    VALUES (customer_id, 'John Smith', 'john.smith@example.com', 'PK', 'Pakistani');
+  END IF;
 END $$;
