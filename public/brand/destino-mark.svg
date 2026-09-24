@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 450" role="img" aria-label="Destino Travels">
+<defs><clipPath id="c"><rect x="14" y="14" width="272" height="422" rx="136"/></clipPath></defs>
+<rect width="300" height="450" fill="none"/>
+<rect x="14" y="14" width="272" height="422" rx="136" fill="none" stroke="#C9A43A" stroke-width="14"/>
+<g stroke="#C9A43A" fill="none" stroke-width="13" stroke-linecap="round" stroke-linejoin="round">
+<path d="M75 145c42-47 92-53 139-25-39-2-76 7-106 31M82 181c46-35 99-36 151-8-43 1-79 13-111 37M69 225c40-26 90-23 138 6M151 231c-5 54-14 107-3 175M148 238c31-52 61-79 100-89M147 239c-35-30-64-42-96-38M55 286c29 9 53 10 73 2M67 271l-20-17M70 286l-26-4M72 301l-24 9M86 264l-11-23M93 267l4-27M103 275l17-23"/>
+</g>
+<g clip-path="url(#c)">
+<path fill="#09A9B4" d="M-15 297c68-66 122-72 183-46 45 19 86 45 143 59v154H-15z"/>
+<path fill="none" stroke="#C9A43A" stroke-width="9" stroke-linecap="round" d="M10 327c53 27 100 24 146-1 42-23 80-25 133 4M3 363c51 27 98 25 145 0 44-24 82-24 141 6M-1 400c49 27 97 26 146 1 43-23 82-22 139 7"/>
+<path fill="#C9A43A" d="M135 450h175V309c-36 4-75 14-105 33-37 24-60 59-70 108z"/>
+</g></svg>
