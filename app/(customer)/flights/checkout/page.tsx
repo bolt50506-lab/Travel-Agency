@@ -53,38 +53,33 @@ export default function FlightCheckoutPage() {
     const sid = searchParams.get('searchId') || '';
     setSearchId(sid);
 
-    fetch('/api/flights/search', {
+    // Do not perform a new flight search here. Duffel offer IDs are tied to
+    // the original offer and a fresh offer request produces different IDs.
+    // Load the selected offer directly from Duffel through revalidation.
+    fetch('/api/flights/revalidate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        tripType: searchParams.get('tripType') || 'one-way',
-        origin,
-        destination,
-        departDate,
-        passengers: { adults, children, infants },
-        cabinClass,
-      }),
+      body: JSON.stringify({ offerId, searchId: sid }),
     })
       .then(async (res) => {
-        if (!res.ok) throw new Error('Failed to load flight details');
-        return res.json();
-      })
-      .then((data) => {
-        const found = (data.offers as FlightOffer[]).find((o) => o.id === offerId);
-        if (!found) {
-          setError('Selected flight is no longer available. Please search again.');
-        } else {
-          setOffer(found);
-          setSearchId(data.searchId);
-          initPassengers();
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data.error || 'Failed to load selected flight');
+
+        if (!data.valid || !data.offer) {
+          throw new Error('Selected flight is no longer available. Please search again.');
         }
+
+        setOffer(data.offer as FlightOffer);
+        initPassengers();
         setLoading(false);
       })
       .catch((err) => {
-        setError(err.message);
+        setError(err instanceof Error ? err.message : 'Failed to load selected flight');
         setLoading(false);
       });
-  }, [offerId, origin, destination, departDate, adults, children, infants, cabinClass]);
+  }, [offerId]);
+
+
 
   const initPassengers = () => {
     const psngs: FlightPassenger[] = [];
