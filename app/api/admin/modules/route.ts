@@ -34,7 +34,7 @@ function sanitize(body: Record<string, unknown>, fields: string[]) {
 
 export async function GET(req: NextRequest) {
   try {
-    await requireAdmin();
+    await requireAdmin(req.headers.get('cookie'));
     const params = new URL(req.url).searchParams;
     const moduleName = params.get('module') || '';
     const cfg = configs[moduleName];
@@ -58,7 +58,7 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const actor = await requireAdmin();
+    const actor = await requireAdmin(req.headers.get('cookie'));
     const body = await req.json();
     const cfg = configs[body.module];
     if (!cfg) return errorResponse('Unknown module', 'MODULE_NOT_FOUND', 404);
