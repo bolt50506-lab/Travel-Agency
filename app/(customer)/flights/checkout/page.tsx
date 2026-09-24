@@ -507,6 +507,23 @@ export default function FlightCheckoutPage() {
                   <span className="text-muted-foreground">Taxes & Fees</span>
                   <span>{formatPrice(offer.taxesAndFees.amount)}</span>
                 </div>
+                {(() => {
+                  // The customer total includes the agency pricing adjustment
+                  // (markup/service fee, less any discount). Show it explicitly
+                  // so the checkout breakdown always reconciles to the total.
+                  const pricingAdjustment = Math.round(
+                    (Number(offer.totalPrice.amount) -
+                      Number(offer.basePrice.amount) -
+                      Number(offer.taxesAndFees.amount)) * 100
+                  ) / 100;
+
+                  return pricingAdjustment !== 0 ? (
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Agency Service Fee</span>
+                      <span>{formatPrice(pricingAdjustment, offer.totalPrice.currency)}</span>
+                    </div>
+                  ) : null;
+                })()}
                 <Separator />
                 <div className="flex justify-between font-bold">
                   <span>Total</span>
