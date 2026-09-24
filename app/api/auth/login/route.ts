@@ -43,7 +43,30 @@ export async function POST(req: NextRequest) {
       .eq('id', account.id)
       .maybeSingle();
 
-    if (!profile || profile.is_active === false) {
+    if (!profile) {
+      return errorResponse('This account is inactive. Please contact the agency.', 'AUTH_ACCOUNT_INACTIVE', 403);
+    }
+
+    // Admin accounts are created/managed by the agency and must never be
+    // stranded by an accidental inactive flag. Repair the flag on login so
+    // the admin can regain access even when an older database seed left it off.
+    if (profile.role === 'admin' && profile.is_active === false) {
+      const { data: repairedProfile, error: repairError } = await supabaseAdmin
+        .from('profiles')
+        .update({ is_active: true, updated_at: new Date().toISOString() })
+        .eq('id', profile.id)
+        .select('id,email,full_name,phone,role,is_active,email_verified_at')
+        .single();
+
+      if (repairError || !repairedProfile) {
+        console.error('Admin account activation repair failed:', repairError);
+        return errorResponse('Unable to activate the admin account. Please try again.', 'AUTH_ADMIN_ACTIVATION_FAILED', 500);
+      }
+
+      profile = repairedProfile;
+    }
+
+    if (profile.is_active === false) {
       return errorResponse('This account is inactive. Please contact the agency.', 'AUTH_ACCOUNT_INACTIVE', 403);
     }
 
