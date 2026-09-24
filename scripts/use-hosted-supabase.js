@@ -12,7 +12,8 @@ const PROJECT_URL = 'https://nduynlamswyozeydvbpy.supabase.co';
 function parseEnvFile(filePath) {
   if (!fs.existsSync(filePath)) return {};
   const values = {};
-  for (const rawLine of fs.readFileSync(filePath, 'utf8').split(/\r?\n/)) {
+  for (const rawLine of fs.readFileSync(filePath, 'utf8').split(/\r?
+/)) {
     const line = rawLine.trim();
     if (!line || line.startsWith('#')) continue;
     const match = line.match(/^([A-Za-z_][A-Za-z0-9_]*)=(.*)$/);
@@ -46,7 +47,8 @@ async function main() {
     ...parseEnvFile(envLocalPath),
   };
 
-  let serviceKey = current.SUPABASE_SERVICE_ROLE_KEY;\n  let duffelKey = current.DUFFEL_API_KEY;
+  let serviceKey = current.SUPABASE_SERVICE_ROLE_KEY;
+  let duffelKey = current.DUFFEL_API_KEY;
   if (!serviceKey || /^(replace-with|YOUR_)/i.test(serviceKey)) {
     console.log('');
     console.log('Voyago hosted Supabase setup');
@@ -75,7 +77,9 @@ async function main() {
     'POSTGREST_JWT_SECRET=',
     'LOCAL_AUTH_SECRET=' + quote(localAuthSecret),
     'NEXT_PUBLIC_APP_URL=' + quote(current.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'),
-    'FLIGHT_PROVIDER=' + quote(current.FLIGHT_PROVIDER || 'duffel'),\n    'ALLOW_MOCK_PROVIDERS=false',\n    'DUFFEL_API_KEY=' + quote(duffelKey),
+    'FLIGHT_PROVIDER=' + quote(current.FLIGHT_PROVIDER || 'duffel'),
+    'ALLOW_MOCK_PROVIDERS=false',
+    'DUFFEL_API_KEY=' + quote(duffelKey),
     'HOTEL_PROVIDER=' + quote(current.HOTEL_PROVIDER || 'mock'),
     'PAYMENT_PROVIDER=' + quote(current.PAYMENT_PROVIDER || 'manual'),
     'PAYMENT_CURRENCY=' + quote(current.PAYMENT_CURRENCY || 'PKR'),
@@ -109,7 +113,9 @@ async function main() {
     if (current[key] !== undefined) lines.push(key + '=' + quote(current[key]));
   }
 
-  fs.writeFileSync(envLocalPath, lines.join('\n') + '\n', { encoding: 'utf8', mode: 0o600 });
+  fs.writeFileSync(envLocalPath, lines.join('
+') + '
+', { encoding: 'utf8', mode: 0o600 });
 
   console.log('');
   console.log('Hosted Supabase configuration is ready.');
