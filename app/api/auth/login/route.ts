@@ -47,10 +47,6 @@ export async function POST(req: NextRequest) {
       return errorResponse('This account is inactive. Please contact the agency.', 'AUTH_ACCOUNT_INACTIVE', 403);
     }
 
-    const requestedPortal = validation.data.portal;
-    if (requestedPortal && profile.role !== requestedPortal) {
-      return errorResponse('This account is not authorized for this portal.', 'AUTH_WRONG_PORTAL', 403);
-    }
 
     await supabaseAdmin.from('local_users').update({ last_login_at: new Date().toISOString() }).eq('id', account.id);
 
@@ -74,8 +70,11 @@ export async function POST(req: NextRequest) {
       maxAge: 7 * 24 * 60 * 60,
     });
 
+    const redirectTo = profile.role === 'admin' ? '/admin' : profile.role === 'agent' ? '/agent' : '/';
+
     return successResponse({
       user: { id: account.id, email: account.email, profile },
+      redirectTo,
       expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
     });
   } catch (err) {
