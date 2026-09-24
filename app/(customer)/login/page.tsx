@@ -66,12 +66,9 @@ export default function LoginPage() {
       <div className="relative z-10 flex min-h-[calc(100vh-4rem)] items-center justify-center px-4 py-10 sm:px-6">
         <div className="w-full max-w-md">
           <div className="mb-5 flex flex-col items-center text-center">
-            <Link
-              href="/"
-              className="rounded-2xl bg-white/95 px-5 py-3 shadow-2xl ring-1 ring-white/50 backdrop-blur"
-            >
+            <div className="rounded-2xl bg-white/95 px-5 py-3 shadow-2xl ring-1 ring-white/50 backdrop-blur">
               <BrandLogo />
-            </Link>
+            </div>
 
             <div className="mt-3 inline-flex items-center gap-2 rounded-full border border-white/25 bg-[#062f43]/55 px-3.5 py-1.5 text-xs font-semibold text-white shadow-lg backdrop-blur-md">
               <ShieldCheck className="h-3.5 w-3.5 text-[#d2a92f]" />
