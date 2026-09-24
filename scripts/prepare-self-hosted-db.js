@@ -8,6 +8,44 @@ const outputFile = path.join(outputDir, 'schema.sql');
 
 const files = fs.readdirSync(migrationsDir).filter((name) => name.endsWith('.sql')).sort();
 
+
+function rewriteSelfHostedBootstrapConflicts(sql) {
+  let out = sql;
+
+  // The self-hosted demo bootstrap must remain idempotent even when an existing
+  // database was created before user_id uniqueness was introduced. Avoid relying
+  // on ON CONFLICT(user_id), which requires a unique/exclusion constraint.
+  out = out.replace(
+    /INSERT INTO public\.agents \(user_id, agent_code, commission_rate, is_active\)\s*VALUES \(agent_id, 'AG-DEMO01', 0, true\)\s*ON CONFLICT \(user_id\) DO UPDATE SET is_active = true\s*;/gis,
+    `UPDATE public.agents
+  SET is_active = true, user_id = agent_id
+  WHERE user_id = agent_id OR agent_code = 'AG-DEMO01';
+
+  IF NOT FOUND THEN
+    INSERT INTO public.agents (user_id, agent_code, commission_rate, is_active)
+    VALUES (agent_id, 'AG-DEMO01', 0, true);
+  END IF;`
+  );
+
+  out = out.replace(
+    /INSERT INTO public\.customers \(user_id, full_name, email, country, nationality\)\s*VALUES \(customer_id, 'John Smith', 'john\.smith@example\.com', 'PK', 'Pakistani'\)\s*ON CONFLICT \(user_id\) DO UPDATE SET email = EXCLUDED\.email\s*;/gis,
+    `UPDATE public.customers
+  SET email = 'john.smith@example.com',
+      full_name = 'John Smith',
+      country = 'PK',
+      nationality = 'Pakistani',
+      user_id = customer_id
+  WHERE user_id = customer_id OR email = 'john.smith@example.com';
+
+  IF NOT FOUND THEN
+    INSERT INTO public.customers (user_id, full_name, email, country, nationality)
+    VALUES (customer_id, 'John Smith', 'john.smith@example.com', 'PK', 'Pakistani');
+  END IF;`
+  );
+
+  return out;
+}
+
 function stripSupabaseOnlySql(sql) {
   let out = sql;
   // Remove whole Supabase-only DO blocks before stripping policy/storage statements.
@@ -56,7 +94,7 @@ const header = [
 let body = '';
 for (const file of files) {
   const sql = fs.readFileSync(path.join(migrationsDir, file), 'utf8');
-  body += '\n-- ===== ' + file + ' =====\n' + stripSupabaseOnlySql(sql) + '\n';
+  body += '\n-- ===== ' + file + ' =====\n' + rewriteSelfHostedBootstrapConflicts(stripSupabaseOnlySql(sql)) + '\n';
 }
 
 const security = [
