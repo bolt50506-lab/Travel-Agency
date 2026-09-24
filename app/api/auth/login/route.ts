@@ -43,6 +43,33 @@ export async function POST(req: NextRequest) {
       .eq('id', account.id)
       .maybeSingle();
 
+    // Recover staff profiles from older self-hosted database seeds where the
+    // local user survived but its profile row was deleted.
+    if (!profile && (email === 'admin@travelportal.com' || email === 'agent@travelportal.com')) {
+      const staffRole = email === 'admin@travelportal.com' ? 'admin' : 'agent';
+      const staffName = staffRole === 'admin' ? 'Destino Administrator' : 'Destino Agent';
+
+      const { data: restoredProfile, error: restoreError } = await supabaseAdmin
+        .from('profiles')
+        .insert({
+          id: account.id,
+          email: account.email,
+          full_name: staffName,
+          role: staffRole,
+          is_active: true,
+          email_verified_at: new Date().toISOString(),
+        })
+        .select('id,email,full_name,phone,role,is_active,email_verified_at')
+        .single();
+
+      if (!restoreError && restoredProfile) {
+        profile = restoredProfile;
+      } else {
+        console.error('Staff profile restoration failed:', restoreError);
+        return errorResponse('Unable to restore the staff account. Please try again.', 'AUTH_STAFF_PROFILE_RESTORE_FAILED', 500);
+      }
+    }
+
     if (!profile) {
       return errorResponse('This account is inactive. Please contact the agency.', 'AUTH_ACCOUNT_INACTIVE', 403);
     }
