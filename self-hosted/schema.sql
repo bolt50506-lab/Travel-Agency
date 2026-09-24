@@ -2064,3 +2064,48 @@ ALTER TABLE quotations
   ADD COLUMN IF NOT EXISTS agency_margin numeric(12,2) NOT NULL DEFAULT 0,
   ADD COLUMN IF NOT EXISTS service_type text NOT NULL DEFAULT 'flight' CHECK (service_type IN ('flight','hotel','package','visa','insurance'));
 CREATE INDEX IF NOT EXISTS idx_quotations_agent_status ON quotations(agent_id, status);
+
+
+-- ===== 20260924090000_add_customer_wallets.sql =====
+CREATE TABLE IF NOT EXISTS public.customer_wallets (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  customer_id uuid NOT NULL UNIQUE REFERENCES public.customers(id) ON DELETE CASCADE,
+  balance numeric(14,2) NOT NULL DEFAULT 0 CHECK (balance >= 0),
+  currency text NOT NULL DEFAULT 'PKR' CHECK (currency = 'PKR'),
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS public.wallet_topups (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  wallet_id uuid NOT NULL REFERENCES public.customer_wallets(id) ON DELETE CASCADE,
+  customer_id uuid NOT NULL REFERENCES public.customers(id) ON DELETE CASCADE,
+  amount numeric(14,2) NOT NULL CHECK (amount > 0),
+  currency text NOT NULL DEFAULT 'PKR' CHECK (currency = 'PKR'),
+  method text NOT NULL CHECK (method IN ('bank_transfer','raast','jazzcash','easypaisa','card','manual')),
+  payment_reference text,
+  customer_note text,
+  status text NOT NULL DEFAULT 'PENDING' CHECK (status IN ('PENDING','APPROVED','REJECTED','CANCELLED')),
+  reviewed_by uuid REFERENCES public.profiles(id) ON DELETE SET NULL,
+  reviewed_at timestamptz,
+  review_note text,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now()
+);
+
+DROP TRIGGER IF EXISTS set_updated_at ON public.customer_wallets;
+CREATE TRIGGER set_updated_at BEFORE UPDATE ON public.customer_wallets
+FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+DROP TRIGGER IF EXISTS set_updated_at ON public.wallet_topups;
+CREATE TRIGGER set_updated_at BEFORE UPDATE ON public.wallet_topups
+FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE INDEX IF NOT EXISTS idx_customer_wallets_customer_id ON public.customer_wallets(customer_id);
+CREATE INDEX IF NOT EXISTS idx_wallet_topups_customer_id ON public.wallet_topups(customer_id);
+CREATE INDEX IF NOT EXISTS idx_wallet_topups_status ON public.wallet_topups(status);
+
+GRANT ALL PRIVILEGES ON public.customer_wallets TO service_role;
+GRANT ALL PRIVILEGES ON public.wallet_topups TO service_role;
+
+NOTIFY pgrst, 'reload schema';
