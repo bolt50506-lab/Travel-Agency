@@ -61,6 +61,16 @@ async function main() {
     process.exit(1);
   }
 
+  if (!duffelKey || /^(replace-with|YOUR_|undefined|null)$/i.test(duffelKey)) {
+    console.log('');
+    duffelKey = await prompt('Paste the Duffel TEST API key (stored only in .env.local): ');
+  }
+
+  if (!duffelKey) {
+    console.error('A Duffel TEST API key is required for flight search.');
+    process.exit(1);
+  }
+
   const localAuthSecret =
     current.LOCAL_AUTH_SECRET &&
     current.LOCAL_AUTH_SECRET.length >= 32 &&
