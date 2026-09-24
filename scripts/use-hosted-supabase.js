@@ -112,9 +112,7 @@ async function main() {
     if (current[key] !== undefined) lines.push(key + '=' + quote(current[key]));
   }
 
-  fs.writeFileSync(envLocalPath, lines.join('
-') + '
-', { encoding: 'utf8', mode: 0o600 });
+  fs.writeFileSync(envLocalPath, lines.join(String.fromCharCode(10)) + String.fromCharCode(10), { encoding: 'utf8', mode: 0o600 });
 
   console.log('');
   console.log('Hosted Supabase configuration is ready.');
