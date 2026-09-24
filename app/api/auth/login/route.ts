@@ -181,7 +181,20 @@ export async function POST(req: NextRequest) {
       (!forwardedProto && req.nextUrl.protocol === 'https:')
     );
 
-    cookies().set('voyago_access_token', token, {
+    const redirectTo = profile.role === 'admin' ? '/admin' : profile.role === 'agent' ? '/agent' : '/';
+
+    // Attach the auth cookie directly to the response. This is more reliable
+    // with Next.js 13 production builds than mutating the request cookie store
+    // and guarantees the Set-Cookie header is present on the login response.
+    const response = successResponse({
+      user: { id: account.id, email: account.email, profile },
+      redirectTo,
+      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+    });
+
+    response.cookies.set({
+      name: 'voyago_access_token',
+      value: token,
       httpOnly: true,
       secure: isSecureRequest,
       sameSite: 'lax',
@@ -189,13 +202,8 @@ export async function POST(req: NextRequest) {
       maxAge: 7 * 24 * 60 * 60,
     });
 
-    const redirectTo = profile.role === 'admin' ? '/admin' : profile.role === 'agent' ? '/agent' : '/';
-
-    return successResponse({
-      user: { id: account.id, email: account.email, profile },
-      redirectTo,
-      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-    });
+    response.headers.set('Cache-Control', 'no-store');
+    return response;
   } catch (err) {
     console.error('Login error:', err);
     return errorResponse('Something went wrong during login', 'INTERNAL_ERROR', 500);
