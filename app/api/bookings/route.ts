@@ -227,15 +227,13 @@ export async function POST(req: NextRequest) {
     if (!body.contactEmail || !body.contactPhone) return errorResponse('Contact details are required', 'VALIDATION_ERROR', 400);
 
     const actor = await getServerActor();
-    if (!actor) return errorResponse('Login required', 'AUTH_REQUIRED', 401);
-
     const details = body.flightDetails || body.hotelDetails || {};
     const passengerOrGuest = details.passengers?.[0] || details.guests?.[0];
     const customerName = passengerOrGuest
       ? [passengerOrGuest.firstName, passengerOrGuest.lastName].filter(Boolean).join(' ')
       : body.contactEmail.split('@')[0];
 
-    const agent = actor.role === 'agent' ? await requireAgentRecord(actor.id) : null;
+    const agent = actor?.role === 'agent' ? await requireAgentRecord(actor.id) : null;
     let customer;
     if (agent && body.customerId) {
       const { data: selectedCustomer } = await supabaseAdmin
@@ -247,7 +245,37 @@ export async function POST(req: NextRequest) {
       if (!selectedCustomer) return errorResponse('Customer is not assigned to this agent', 'FORBIDDEN', 403);
       customer = selectedCustomer;
     } else {
-      customer = await findCustomer(actor.id, body.contactEmail, body.contactPhone, customerName, !!agent);
+      if (actor) {
+        customer = await findCustomer(actor.id, body.contactEmail, body.contactPhone, customerName, !!agent);
+      } else {
+        const { data: existingGuest } = await supabaseAdmin
+          .from('customers')
+          .select('*')
+          .is('user_id', null)
+          .eq('email', body.contactEmail)
+          .eq('phone', body.contactPhone)
+          .order('created_at', { ascending: true })
+          .limit(1)
+          .maybeSingle();
+        customer = existingGuest;
+
+        if (!customer) {
+          const { data: guestCustomer, error: guestError } = await supabaseAdmin
+            .from('customers')
+            .insert({
+              user_id: null,
+              full_name: customerName || body.contactEmail.split('@')[0],
+              email: body.contactEmail,
+              phone: body.contactPhone,
+              country: 'PK',
+              nationality: 'Pakistani',
+            })
+            .select('*')
+            .single();
+          if (guestError) throw guestError;
+          customer = guestCustomer;
+        }
+      }
     }
 
     const agentContactEmail = body.contactEmail || customer.email || 'no-email@customer.local';
@@ -305,8 +333,8 @@ export async function POST(req: NextRequest) {
       type: body.type,
       status: 'BOOKING_REQUESTED',
       customer_id: customer.id,
-      booked_by_user_id: actor.id,
-      booked_by_role: actor.role,
+      booked_by_user_id: actor?.id || null,
+      booked_by_role: actor?.role || 'guest',
       ...(agent ? { agent_id: agent.id, agency_id: agent.agency_id || null } : {}),
       contact_email: agentContactEmail,
       contact_phone: agentContactPhone,
@@ -347,7 +375,7 @@ export async function POST(req: NextRequest) {
       status: 'BOOKING_REQUESTED',
       description: 'Booking request received by agency',
       changed_by: actor.id,
-      metadata: { source: actor.role === 'agent' ? 'agent_portal' : actor.role === 'admin' ? 'admin_portal' : 'customer_checkout', bookedByUserId: actor.id, bookedByRole: actor.role, pricingRuleIds: pricing.appliedRuleIds },
+      metadata: { source: agent ? 'agent_portal' : actor?.role === 'admin' ? 'admin_portal' : actor?.role === 'customer' ? 'customer_checkout' : 'guest_checkout', bookedByUserId: actor?.id || null, bookedByRole: actor?.role || 'guest', pricingRuleIds: pricing.appliedRuleIds },
     })).error;
     if (historyError) console.error('Booking history warning:', historyError);
 
