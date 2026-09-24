@@ -1,3 +1,6 @@
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 import { NextRequest } from 'next/server';
 import { successResponse, errorResponse } from '@/lib/utils/api';
 import { supabaseAdmin } from '@/lib/supabase/server';
@@ -43,7 +46,9 @@ export async function GET(req: NextRequest) {
     const search = (params.get('search') || '').toLowerCase();
     if (search) rows = rows.filter((row: any) => cfg.search.some((key) => String(row[key] ?? '').toLowerCase().includes(search)));
 
-    return successResponse({ module: moduleName, fields: cfg.fields, rows });
+    const response = successResponse({ module: moduleName, fields: cfg.fields, rows });
+    response.headers.set('Cache-Control', 'no-store, private');
+    return response;
   } catch (err) {
     if (err instanceof Error && err.message === 'UNAUTHORIZED_ADMIN') return errorResponse('Admin access required', 'FORBIDDEN', 403);
     console.error(err);
