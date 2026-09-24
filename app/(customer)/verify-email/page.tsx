@@ -47,7 +47,7 @@ export default function VerifyEmailPage() {
             <CheckCircle2 className="mx-auto h-12 w-12 text-green-600" />
             <h1 className="mt-4 text-2xl font-bold">Email verified</h1>
             <p className="mt-2 text-sm text-muted-foreground">Your customer account is now active. You can log in.</p>
-            <Button asChild className="mt-6 w-full"><Link href="/login">Go to Login</Link></Button>
+            <Link href="/login" className="mt-6 flex h-10 w-full items-center justify-center rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90">Go to Login</Link>
           </>
         ) : (
           <>
