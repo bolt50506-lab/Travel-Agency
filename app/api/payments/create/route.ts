@@ -12,7 +12,6 @@ function paymentReference() {
 export async function POST(req: NextRequest) {
   try {
     const actor = await getServerActor();
-    if (!actor) return errorResponse('Login required', 'AUTH_REQUIRED', 401);
 
     const validation = validateBody(paymentSchema, await req.json());
     if (!validation.success) return errorResponse(validation.error, 'VALIDATION_ERROR', 400);
@@ -38,7 +37,11 @@ export async function POST(req: NextRequest) {
       return errorResponse('Payment amount does not match booking', 'PAYMENT_AMOUNT_MISMATCH', 409);
     }
 
-    if (actor.role === 'customer') {
+    if (!actor) {
+      // Guest checkout is allowed. Only bookings created as guest bookings
+      // can be paid without an authenticated actor.
+      if (booking.booked_by_user_id) return errorResponse('Login required for this booking', 'AUTH_REQUIRED', 401);
+    } else if (actor.role === 'customer') {
       const { data: customer } = await supabaseAdmin.from('customers').select('id').eq('user_id', actor.id).maybeSingle();
       if (!customer || customer.id !== booking.customer_id) return errorResponse('Forbidden', 'FORBIDDEN', 403);
     } else if (actor.role === 'agent') {
@@ -84,7 +87,7 @@ export async function POST(req: NextRequest) {
       provider_name: input.method === 'card' ? 'manual_card' : 'manual',
       provider_response: {
         mode: 'manual_verification',
-        actorId: actor.id,
+        actorId: actor?.id || null,
         paymentReference: input.paymentReference || null,
       },
     }).select('*').single();
@@ -107,7 +110,7 @@ export async function POST(req: NextRequest) {
       booking_id: booking.id,
       status: 'PAYMENT_PENDING',
       description: 'Payment submitted and awaiting agency verification',
-      changed_by: actor.id,
+      changed_by: actor?.id || null,
       metadata: { paymentId: payment.id },
     });
     await supabaseAdmin.from('notifications').insert({
