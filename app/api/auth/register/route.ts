@@ -93,14 +93,32 @@ export async function POST(req: NextRequest) {
     });
     if (tokenError) throw tokenError;
 
+    let verificationEmailSent = false;
     try {
       await sendVerificationEmail(email, fullName, rawToken);
+      verificationEmailSent = true;
     } catch (emailError) {
       console.error('Verification email error:', emailError);
+
+      // Do not destroy a successfully-created customer account just because
+      // the local development environment has no email provider configured.
+      // The account remains safely blocked from login until verification.
+      if (emailError instanceof Error && emailError.message === 'EMAIL_NOT_CONFIGURED' && process.env.NODE_ENV !== 'production') {
+        const appUrl = (process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000').replace(/\/$/, '');
+        return successResponse({
+          user: { id: account.id, email, fullName },
+          requiresEmailVerification: true,
+          verificationUrl: `${appUrl}/api/auth/verify-email?token=${encodeURIComponent(rawToken)}`,
+          emailDelivery: 'development_unconfigured',
+          message: 'Account created. Email delivery is not configured locally. Use the verification link returned for local testing.',
+        }, 201);
+      }
+
       await supabaseAdmin.from('email_verification_tokens').delete().eq('user_id', account.id);
       await supabaseAdmin.from('customers').delete().eq('user_id', account.id);
       await supabaseAdmin.from('profiles').delete().eq('id', account.id);
       await supabaseAdmin.from('local_users').delete().eq('id', account.id);
+
       if (emailError instanceof Error && emailError.message === 'EMAIL_NOT_CONFIGURED') {
         return errorResponse('Email verification is not configured yet. Please contact the agency administrator.', 'EMAIL_NOT_CONFIGURED', 503);
       }
@@ -110,6 +128,7 @@ export async function POST(req: NextRequest) {
     return successResponse({
       user: { id: account.id, email, fullName },
       requiresEmailVerification: true,
+      emailDelivery: verificationEmailSent ? 'sent' : 'unknown',
       message: 'Account created. Please check your email and verify your address before logging in.',
     }, 201);
   } catch (err) {
