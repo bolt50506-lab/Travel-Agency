@@ -7,6 +7,10 @@ export const metadata: Metadata = {
   title: 'Destino Travels — Search. Book. Travel.',
   description:
     'Book flights and hotels from Pakistan with transparent PKR pricing and trusted travel support.',
+  icons: {
+    icon: '/brand/destino-mark.svg',
+    shortcut: '/brand/destino-mark.svg',
+  },
   openGraph: {
     title: 'Destino Travels — Search. Book. Travel.',
     description: 'Book flights and hotels from Pakistan with confidence.',
