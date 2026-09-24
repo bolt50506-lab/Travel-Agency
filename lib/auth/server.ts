@@ -71,48 +71,22 @@ export async function getServerActor(): Promise<ServerActor | null> {
   const session = verifySessionToken(token);
   if (!session) return null;
 
-  // The email in the signed session is the login identity. Resolve the
-  // current profile by email first so an old/stale token cannot accidentally
-  // authorize against a different profile that happens to have the same
-  // session subject in an older self-hosted database.
-  let { data: profile, error } = await supabaseAdmin
+  const { data: profile, error } = await supabaseAdmin
     .from('profiles')
     .select('*')
-    .eq('email', session.email.trim().toLowerCase())
+    .eq('id', session.sub)
     .maybeSingle();
-
-  // Backward-compatible fallback for databases where the profile email was
-  // not normalized but the profile ID still matches the local account.
-  if ((error || !profile) && session.sub) {
-    const byId = await supabaseAdmin
-      .from('profiles')
-      .select('*')
-      .eq('id', session.sub)
-      .maybeSingle();
-
-    if (!byId.error && byId.data) {
-      profile = byId.data;
-      error = null;
-    }
-  }
 
   if (error || !profile || profile.is_active === false) return null;
 
-  // Never authorize if the resolved profile belongs to a different identity.
-  const profileEmail = String(profile.email || '').trim().toLowerCase();
-  const sessionEmail = session.email.trim().toLowerCase();
-  if (!profileEmail || profileEmail !== sessionEmail) return null;
-
-  const normalizedRole = String(profile.role || '').trim().toLowerCase();
-  if (!['customer', 'agent', 'admin'].includes(normalizedRole)) return null;
-
   return {
-    id: String(profile.id || session.sub),
-    email: profileEmail,
-    role: normalizedRole as ServerActor['role'],
+    id: session.sub,
+    email: session.email,
+    role: profile.role || session.role,
     profile,
   };
 }
+
 export async function requireStaff() {
   const actor = await getServerActor();
   if (!actor || !['admin', 'agent'].includes(actor.role)) throw new Error('UNAUTHORIZED_STAFF');
@@ -130,5 +104,3 @@ export async function requireAgent() {
   if (!actor || actor.role !== 'agent') throw new Error('UNAUTHORIZED_AGENT');
   return actor;
 }
-
-
