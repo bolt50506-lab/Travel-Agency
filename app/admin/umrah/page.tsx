@@ -229,7 +229,7 @@ export default function AdminUmrahPage() {
             </section>
 
             <section className="rounded-2xl border bg-muted/20 p-4">
-              <h3 className="mb-4 font-semibold">What's included</h3>
+              <h3 className="mb-4 font-semibold">What&apos;s included</h3>
               <div className="grid gap-3 sm:grid-cols-3">
                 <Toggle label="Visa included" value={form.visa_included} onChange={(v) => setField('visa_included', v)} />
                 <Toggle label="Flights included" value={form.flights_included} onChange={(v) => setField('flights_included', v)} />
