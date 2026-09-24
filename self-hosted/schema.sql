@@ -106,7 +106,7 @@ CREATE TABLE IF NOT EXISTS agencies (
 
 CREATE TABLE IF NOT EXISTS agents (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id uuid NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  user_id uuid NOT NULL UNIQUE REFERENCES profiles(id) ON DELETE CASCADE,
   agency_id uuid REFERENCES agencies(id) ON DELETE SET NULL,
   agent_code text UNIQUE,
   commission_rate numeric(5,2) DEFAULT 0,
@@ -118,7 +118,7 @@ CREATE TABLE IF NOT EXISTS agents (
 
 CREATE TABLE IF NOT EXISTS customers (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id uuid REFERENCES profiles(id) ON DELETE SET NULL,
+  user_id uuid UNIQUE REFERENCES profiles(id) ON DELETE SET NULL,
   full_name text NOT NULL,
   email text,
   phone text,
@@ -2123,6 +2123,44 @@ GRANT ALL PRIVILEGES ON public.customer_wallets TO service_role;
 GRANT ALL PRIVILEGES ON public.wallet_topups TO service_role;
 
 NOTIFY pgrst, 'reload schema';
+
+-- ===== 20260923189900_repair_user_uniqueness.sql =====
+/*
+  Repair self-hosted agent/customer user ownership constraints.
+  The bootstrap path uses ON CONFLICT (user_id), so each non-null user_id
+  must identify at most one agent/customer row.
+*/
+WITH ranked AS (
+  SELECT id,
+         ROW_NUMBER() OVER (
+           PARTITION BY user_id
+           ORDER BY created_at ASC NULLS FIRST, id ASC
+         ) AS rn
+  FROM public.agents
+  WHERE user_id IS NOT NULL
+)
+DELETE FROM public.agents a
+USING ranked r
+WHERE a.id = r.id AND r.rn > 1;
+
+WITH ranked AS (
+  SELECT id,
+         ROW_NUMBER() OVER (
+           PARTITION BY user_id
+           ORDER BY created_at ASC NULLS FIRST, id ASC
+         ) AS rn
+  FROM public.customers
+  WHERE user_id IS NOT NULL
+)
+DELETE FROM public.customers c
+USING ranked r
+WHERE c.id = r.id AND r.rn > 1;
+
+CREATE UNIQUE INDEX IF NOT EXISTS agents_user_id_unique
+  ON public.agents(user_id);
+
+CREATE UNIQUE INDEX IF NOT EXISTS customers_user_id_unique
+  ON public.customers(user_id);
 
 -- ===== LOCAL AUTH DEMO ACCOUNTS (SELF-HOSTED) =====
 -- Keep the local Docker environment immediately usable after a fresh or existing
