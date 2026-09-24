@@ -36,7 +36,9 @@ services:
         export PGPASSWORD="$$POSTGRES_PASSWORD"
         psql -h db -U "$$POSTGRES_USER" -d "$$POSTGRES_DB" -v ON_ERROR_STOP=1 -f /bootstrap.sql
         psql -h db -U "$$POSTGRES_USER" -d "$$POSTGRES_DB" -v ON_ERROR_STOP=1 -f /schema.sql
-        psql -h db -U "$$POSTGRES_USER" -d "$$POSTGRES_DB" -v pgrest_password="$$POSTGREST_DB_PASSWORD" -v ON_ERROR_STOP=1 -c "ALTER ROLE authenticator PASSWORD :'pgrest_password';"
+        psql -h db -U "$POSTGRES_USER" -d "$POSTGRES_DB" -v "pgrest_password=$POSTGREST_DB_PASSWORD" -v ON_ERROR_STOP=1 <<'SQL'
+        ALTER ROLE authenticator PASSWORD :'pgrest_password';
+        SQL
         echo "Self-hosted database initialization completed."
     restart: "no"
 
