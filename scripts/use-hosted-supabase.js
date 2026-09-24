@@ -96,7 +96,6 @@ async function main() {
   ];
 
   const optionalKeys = [
-    'DUFFEL_API_KEY',
     'AMADEUS_CLIENT_ID',
     'AMADEUS_CLIENT_SECRET',
     'TRAVELPORT_CLIENT_ID',
