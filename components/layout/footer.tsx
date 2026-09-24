@@ -2,7 +2,8 @@
 
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
-import { Globe, Twitter, Facebook, Instagram, Linkedin } from 'lucide-react';
+import { Twitter, Facebook, Instagram, Linkedin } from 'lucide-react';
+import { BrandLogo } from '@/components/brand/logo';
 
 const footerLinks = {
   Company: [
@@ -41,12 +42,7 @@ export function Footer() {
       <div className="container-page py-12">
         <div className="grid grid-cols-2 gap-8 md:grid-cols-5">
           <div className="col-span-2 md:col-span-1">
-            <Link href="/" className="flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary">
-                <Globe className="h-5 w-5 text-primary-foreground" />
-              </div>
-              <span className="text-xl font-bold tracking-tight">Destino Travels</span>
-            </Link>
+            <BrandLogo />
             <p className="mt-3 text-sm text-muted-foreground max-w-xs">
               Search. Book. Travel. Your trusted partner for flights and hotels worldwide.
             </p>
