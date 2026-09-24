@@ -65,6 +65,7 @@ CREATE TABLE IF NOT EXISTS roles (
 CREATE TABLE IF NOT EXISTS profiles (
   id uuid PRIMARY KEY REFERENCES local_users(id) ON DELETE CASCADE,
   email text NOT NULL,
+  email_verified_at timestamptz,
   full_name text,
   phone text,
   cnic text,
@@ -73,6 +74,18 @@ CREATE TABLE IF NOT EXISTS profiles (
   created_at timestamptz DEFAULT now(),
   updated_at timestamptz DEFAULT now()
 );
+
+CREATE TABLE IF NOT EXISTS email_verification_tokens (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL REFERENCES local_users(id) ON DELETE CASCADE,
+  token_hash text UNIQUE NOT NULL,
+  expires_at timestamptz NOT NULL,
+  used_at timestamptz,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_email_verification_tokens_user_id ON email_verification_tokens(user_id);
+CREATE INDEX IF NOT EXISTS idx_email_verification_tokens_expires_at ON email_verification_tokens(expires_at);
 
 CREATE TABLE IF NOT EXISTS agencies (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -2105,6 +2118,7 @@ CREATE INDEX IF NOT EXISTS idx_customer_wallets_customer_id ON public.customer_w
 CREATE INDEX IF NOT EXISTS idx_wallet_topups_customer_id ON public.wallet_topups(customer_id);
 CREATE INDEX IF NOT EXISTS idx_wallet_topups_status ON public.wallet_topups(status);
 
+GRANT ALL PRIVILEGES ON public.email_verification_tokens TO service_role;
 GRANT ALL PRIVILEGES ON public.customer_wallets TO service_role;
 GRANT ALL PRIVILEGES ON public.wallet_topups TO service_role;
 
