@@ -134,12 +134,44 @@ export async function POST(req: NextRequest) {
     const customer = await getCustomer(actor.id);
     if (!customer) return errorResponse('Customer profile not found.', 'CUSTOMER_NOT_FOUND', 404);
 
-    const { data: wallet, error: walletError } = await supabaseAdmin
+    // The project's lightweight PostgREST wrapper intentionally exposes
+    // insert/update/select, but not Supabase's .upsert() helper. Reuse the
+    // wallet created by GET, or create it if this is the first top-up.
+    let { data: wallet, error: walletError } = await supabaseAdmin
       .from('customer_wallets')
-      .upsert({ customer_id: customer.id }, { onConflict: 'customer_id' })
       .select('*')
-      .single();
-    if (walletError || !wallet) throw walletError || new Error('Wallet could not be created');
+      .eq('customer_id', customer.id)
+      .maybeSingle();
+
+    if (walletError) throw walletError;
+
+    if (!wallet) {
+      const created = await supabaseAdmin
+        .from('customer_wallets')
+        .insert({ customer_id: customer.id })
+        .select('*')
+        .single();
+
+      if (created.error) {
+        // Another request may have created the unique wallet between SELECT
+        // and INSERT. Read it again rather than failing the customer's top-up.
+        const existing = await supabaseAdmin
+          .from('customer_wallets')
+          .select('*')
+          .eq('customer_id', customer.id)
+          .maybeSingle();
+
+        if (existing.error || !existing.data) {
+          throw created.error;
+        }
+
+        wallet = existing.data;
+      } else {
+        wallet = created.data;
+      }
+    }
+
+    if (!wallet) throw new Error('Wallet could not be created');
 
     const { data: topup, error } = await supabaseAdmin
       .from('wallet_topups')
