@@ -1,20 +1,18 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Mail, Lock, Loader2, AlertCircle, ShieldCheck, BriefcaseBusiness } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card } from '@/components/ui/card';
 import { BrandLogo } from '@/components/brand/logo';
+import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 
 type Portal = 'agent' | 'admin';
 
 export function PortalLogin({ portal }: { portal: Portal }) {
-  const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -25,40 +23,41 @@ export function PortalLogin({ portal }: { portal: Portal }) {
     event.preventDefault();
     setLoading(true);
     setError(null);
+
     try {
       const response = await fetch('/api/auth/login', {
         method: 'POST',
+        credentials: 'same-origin',
         headers: { 'Content-Type': 'application/json' },
+        cache: 'no-store',
         body: JSON.stringify({ email, password, portal }),
       });
-      const data = await response.json();
+
+      const data = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(data.error || 'Login failed');
+
       toast.success(isAdmin ? 'Employee access granted.' : 'Agent access granted.');
-      router.push(isAdmin ? '/admin' : '/agent');
-      router.refresh();
+
+      // Use the server-selected destination and force a real navigation.
+      // This guarantees the freshly issued HttpOnly session cookie is used
+      // by the first protected page/API request.
+      window.location.assign(data.redirectTo || (isAdmin ? '/admin' : '/agent'));
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong');
-    } finally {
       setLoading(false);
     }
   }
 
   return (
     <main className="relative min-h-screen overflow-hidden bg-[#062f43]">
-      <div
-        aria-hidden="true"
-        className="absolute inset-0 bg-cover bg-center"
-        style={{ backgroundImage: "url('/brand/login-island.svg')" }}
-      />
+      <div aria-hidden="true" className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: "url('/brand/login-island.svg')" }} />
       <div aria-hidden="true" className="absolute inset-0 bg-[#062f43]/45" />
       <div aria-hidden="true" className="absolute inset-0 bg-gradient-to-b from-[#062f43]/25 via-[#062f43]/10 to-[#062f43]/70" />
 
       <div className="relative z-10 flex min-h-screen items-center justify-center px-4 py-10 sm:px-6">
         <div className="w-full max-w-md">
           <div className="mb-6 flex flex-col items-center text-center">
-            <Link href="/" className="rounded-2xl bg-white/95 p-3 shadow-2xl ring-1 ring-white/40 backdrop-blur">
-              <BrandLogo />
-            </Link>
+            <Link href="/" className="rounded-2xl bg-white/95 p-3 shadow-2xl ring-1 ring-white/40 backdrop-blur"><BrandLogo /></Link>
             <div className="mt-3 inline-flex items-center gap-2 rounded-full border border-white/20 bg-black/20 px-3 py-1 text-xs font-medium text-white backdrop-blur-md">
               {isAdmin ? <ShieldCheck className="h-3.5 w-3.5" /> : <BriefcaseBusiness className="h-3.5 w-3.5" />}
               {isAdmin ? 'Employee administration' : 'Agent portal'}
@@ -66,13 +65,9 @@ export function PortalLogin({ portal }: { portal: Portal }) {
           </div>
 
           <Card className="border-white/25 bg-white/95 p-6 shadow-2xl backdrop-blur-xl sm:p-7">
-            <h1 className="text-xl font-bold text-foreground">
-              {isAdmin ? 'Employee login' : 'Agent login'}
-            </h1>
+            <h1 className="text-xl font-bold text-foreground">{isAdmin ? 'Employee login' : 'Agent login'}</h1>
             <p className="mb-6 mt-1 text-sm text-muted-foreground">
-              {isAdmin
-                ? 'For authorized Destino Travels employees only.'
-                : 'Sign in to manage your customers, quotations and bookings.'}
+              {isAdmin ? 'For authorized Destino Travels employees only.' : 'Sign in to manage your customers, quotations and bookings.'}
             </p>
 
             {error && (
@@ -104,11 +99,8 @@ export function PortalLogin({ portal }: { portal: Portal }) {
           </Card>
 
           <p className="mt-5 text-center text-xs text-white/85">
-            <Link href="/" className="hover:text-white">Back to public website</Link>
-            {' · '}
-            <Link href={isAdmin ? '/agent/login' : '/admin/login'} className="hover:text-white">
-              {isAdmin ? 'Agent login' : 'Employee login'}
-            </Link>
+            <Link href="/" className="hover:text-white">Back to public website</Link>{' · '}
+            <Link href={isAdmin ? '/agent/login' : '/admin/login'} className="hover:text-white">{isAdmin ? 'Agent login' : 'Employee login'}</Link>
           </p>
         </div>
       </div>
