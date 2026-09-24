@@ -14,11 +14,38 @@ export async function POST(req: NextRequest) {
     }
 
     const result = await flightService.revalidateOffer(validation.data);
-    if (result.priceChanged && result.newPrice) {
-      const pricing = await calculateAgencyPrice({ supplierCost: Number(result.offer?.basePrice?.amount || result.newPrice.amount), taxes: Number(result.offer?.taxesAndFees?.amount || 0), requestedCustomerPrice: Number(result.newPrice.amount), context: { product: 'flight' } });
-      return successResponse({ ...result, newPrice: { amount: pricing.customerPrice, currency: 'PKR' }, pricingToken: sealRevalidationToken(pricing) });
-    }
-    return successResponse(result);
+    if (!result.offer) return successResponse(result);
+
+    // Revalidation must return the same customer-facing price used when the
+    // booking is created. The supplier offer is not the agency selling price.
+    const pricing = await calculateAgencyPrice({
+      supplierCost: Number(result.offer.basePrice?.amount || 0),
+      taxes: Number(result.offer.taxesAndFees?.amount || 0),
+      context: {
+        product: 'flight',
+        supplier: result.offer.provider,
+        airline: result.offer.segments?.[0]?.airline?.code,
+        route: result.offer.segments?.[0]?.origin?.code && result.offer.segments?.[0]?.destination?.code
+          ? `${result.offer.segments[0].origin.code}-${result.offer.segments[0].destination.code}`
+          : undefined,
+      },
+    });
+
+    const customerOffer = {
+      ...result.offer,
+      totalPrice: { amount: pricing.customerPrice, currency: 'PKR' },
+      basePrice: { amount: pricing.supplierCost, currency: 'PKR' },
+      taxesAndFees: { amount: pricing.taxes, currency: 'PKR' },
+      pricingToken: sealRevalidationToken(pricing),
+    };
+
+    return successResponse({
+      ...result,
+      offer: customerOffer,
+      priceChanged: false,
+      oldPrice: undefined,
+      newPrice: undefined,
+    });
   } catch (err) {
     console.error('Flight revalidate error:', err);
     return errorResponse('Something went wrong during fare revalidation', 'INTERNAL_ERROR', 500);
