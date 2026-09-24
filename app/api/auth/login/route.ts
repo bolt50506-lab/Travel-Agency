@@ -2,7 +2,6 @@ export const dynamic = 'force-dynamic';
 
 import crypto from 'crypto';
 import { NextRequest } from 'next/server';
-import { cookies } from 'next/headers';
 import { loginSchema } from '@/lib/validation/schemas';
 import { successResponse, errorResponse, validateBody } from '@/lib/utils/api';
 import { supabaseAdmin } from '@/lib/supabase/server';
@@ -11,11 +10,7 @@ import { createSessionToken } from '@/lib/auth/server';
 function verifyPassword(password: string, stored: string) {
   const [scheme, n, r, p, salt, encodedHash] = stored.split('$');
   if (scheme !== 'scrypt' || !n || !r || !p || !salt || !encodedHash) return false;
-  const hash = crypto.scryptSync(password, salt, 64, {
-    N: Number(n),
-    r: Number(r),
-    p: Number(p),
-  }).toString('base64url');
+  const hash = crypto.scryptSync(password, salt, 64, { N: Number(n), r: Number(r), p: Number(p) }).toString('base64url');
   const a = Buffer.from(hash);
   const b = Buffer.from(encodedHash);
   return a.length === b.length && crypto.timingSafeEqual(a, b);
@@ -27,66 +22,55 @@ export async function POST(req: NextRequest) {
     if (!validation.success) return errorResponse(validation.error, 'VALIDATION_ERROR', 400);
 
     const email = validation.data.email.trim().toLowerCase();
-    const { data: account, error } = await supabaseAdmin
-      .from('local_users')
-      .select('id,email,password_hash')
-      .eq('email', email)
-      .maybeSingle();
+    const { data: account, error: accountError } = await supabaseAdmin
+      .from('local_users').select('id,email,password_hash').eq('email', email).maybeSingle();
 
-    if (error || !account || !verifyPassword(validation.data.password, account.password_hash)) {
+    if (accountError || !account || !verifyPassword(validation.data.password, account.password_hash)) {
       return errorResponse('Invalid email or password', 'AUTH_INVALID_CREDENTIALS', 401);
     }
 
-    const { data: profile } = await supabaseAdmin
+    const { data: profile, error: profileError } = await supabaseAdmin
       .from('profiles')
       .select('id,email,full_name,phone,role,is_active,email_verified_at')
-      .eq('id', account.id)
-      .maybeSingle();
+      .eq('id', account.id).maybeSingle();
 
-    if (!profile || profile.is_active === false) {
-      return errorResponse('This account is inactive. Please contact the agency.', 'AUTH_ACCOUNT_INACTIVE', 403);
+    if (profileError || !profile || profile.is_active === false) {
+      return errorResponse('This account is inactive or its profile is unavailable. Please contact the agency.', 'AUTH_ACCOUNT_INACTIVE', 403);
     }
 
-    // The login endpoint authenticates the account; the destination portal is
-    // determined from the current database role. Portal pages/API routes enforce
-    // authorization separately, so a stale/incorrect portal hint can never grant access.
+    if (!['customer', 'agent', 'admin'].includes(profile.role)) {
+      return errorResponse('This account has an invalid access role. Please contact the agency.', 'AUTH_INVALID_ROLE', 403);
+    }
+
     if (profile.role === 'customer' && !profile.email_verified_at) {
-      return errorResponse(
-        'Please verify your email address before logging in. Check your inbox for the verification link.',
-        'AUTH_EMAIL_NOT_VERIFIED',
-        403
-      );
+      return errorResponse('Please verify your email address before logging in. Check your inbox for the verification link.', 'AUTH_EMAIL_NOT_VERIFIED', 403);
     }
 
     await supabaseAdmin.from('local_users').update({ last_login_at: new Date().toISOString() }).eq('id', account.id);
 
-    const token = createSessionToken({
-      id: account.id,
-      email: account.email,
-      role: profile.role,
-    });
-
-    // Match the cookie's Secure flag to the actual request protocol.
-    // This keeps local production testing on http://localhost working while
-    // still using Secure cookies behind HTTPS/Cloudflare in real deployments.
+    const token = createSessionToken({ id: account.id, email: account.email, role: profile.role });
     const forwardedProto = req.headers.get('x-forwarded-proto')?.split(',')[0]?.trim().toLowerCase();
     const isSecureRequest = forwardedProto === 'https' || req.nextUrl.protocol === 'https:';
+    const redirectTo = profile.role === 'admin' ? '/admin' : profile.role === 'agent' ? '/agent' : '/';
 
-    cookies().set('voyago_access_token', token, {
+    const response = successResponse({
+      user: { id: account.id, email: account.email, profile },
+      redirectTo,
+      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+    });
+
+    // Set the cookie on the response itself so browser fetch() reliably stores it.
+    response.cookies.set({
+      name: 'voyago_access_token',
+      value: token,
       httpOnly: true,
       secure: isSecureRequest,
       sameSite: 'lax',
       path: '/',
       maxAge: 7 * 24 * 60 * 60,
     });
-
-    const redirectTo = profile.role === 'admin' ? '/admin' : profile.role === 'agent' ? '/agent' : '/';
-
-    return successResponse({
-      user: { id: account.id, email: account.email, profile },
-      redirectTo,
-      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-    });
+    response.headers.set('Cache-Control', 'no-store');
+    return response;
   } catch (err) {
     console.error('Login error:', err);
     return errorResponse('Something went wrong during login', 'INTERNAL_ERROR', 500);
