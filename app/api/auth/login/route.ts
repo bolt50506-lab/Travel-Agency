@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
       return errorResponse('Invalid email or password', 'AUTH_INVALID_CREDENTIALS', 401);
     }
 
-    const { data: profile } = await supabaseAdmin
+    let { data: profile } = await supabaseAdmin
       .from('profiles')
       .select('id,email,full_name,phone,role,is_active,email_verified_at')
       .eq('id', account.id)
