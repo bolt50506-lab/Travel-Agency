@@ -1,21 +1,31 @@
 export const dynamic = 'force-dynamic';
 
-import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 
-export async function GET(req: Request) {
-  const cookieStore = cookies();
-  cookieStore.set('voyago_access_token', '', {
-    httpOnly: true,
-    secure: new URL(req.url).protocol === 'https:',
-    sameSite: 'lax',
-    path: '/',
-    expires: new Date(0),
-    maxAge: 0,
+function logout(req: Request) {
+  const url = new URL(req.url);
+  const secure = url.protocol === 'https:';
+  const response = NextResponse.redirect(new URL('/', req.url), {
+    headers: { 'Cache-Control': 'no-store, private' },
   });
-  return NextResponse.redirect(new URL('/', req.url), { headers: { 'Cache-Control': 'no-store' } });
+
+  const cookie = [
+    'voyago_access_token=',
+    'Path=/',
+    'HttpOnly',
+    'SameSite=Lax',
+    'Max-Age=0',
+    'Expires=Thu, 01 Jan 1970 00:00:00 GMT',
+  ];
+  if (secure) cookie.push('Secure');
+  response.headers.set('Set-Cookie', cookie.join('; '));
+  return response;
+}
+
+export async function GET(req: Request) {
+  return logout(req);
 }
 
 export async function POST(req: Request) {
-  return GET(req);
+  return logout(req);
 }
