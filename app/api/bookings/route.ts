@@ -374,7 +374,7 @@ export async function POST(req: NextRequest) {
       booking_id: booking.id,
       status: 'BOOKING_REQUESTED',
       description: 'Booking request received by agency',
-      changed_by: actor.id,
+      changed_by: actor?.id || null,
       metadata: { source: agent ? 'agent_portal' : actor?.role === 'admin' ? 'admin_portal' : actor?.role === 'customer' ? 'customer_checkout' : 'guest_checkout', bookedByUserId: actor?.id || null, bookedByRole: actor?.role || 'guest', pricingRuleIds: pricing.appliedRuleIds },
     })).error;
     if (historyError) console.error('Booking history warning:', historyError);
