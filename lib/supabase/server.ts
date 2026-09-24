@@ -119,6 +119,14 @@ class QueryBuilder {
     return this;
   }
 
+  is(column: string, value: null | boolean) {
+    const operator = value === null ? 'is.null' : `is.${value}`;
+    this.filters.push(
+      `${encodeURIComponent(column)}=${operator}`
+    );
+    return this;
+  }
+
   order(column: string, options?: { ascending?: boolean }) {
     const direction =
       options?.ascending === false ? 'desc' : 'asc';
