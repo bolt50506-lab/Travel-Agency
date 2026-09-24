@@ -11,11 +11,13 @@ type QueryResult<T = any> = {
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.replace(/\/$/, '');
 const postgrestUrl =
   process.env.POSTGREST_URL ||
-  (supabaseUrl ? `${supabaseUrl}/rest/v1` : 'http://127.0.0.1:3002');
+  (supabaseUrl ? `${supabaseUrl}/rest/v1` : '');
 
 const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 const jwtSecret = (() => {
+  if (supabaseServiceRoleKey) return '';
+
   const value = process.env.POSTGREST_JWT_SECRET;
   if (!value) {
     if (process.env.NODE_ENV === 'production') {
@@ -170,6 +172,12 @@ class QueryBuilder {
   }
 
   private async execute(): Promise<QueryResult> {
+    if (!postgrestUrl) {
+      throw new Error(
+        'Supabase is not configured. Set NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in .env.local.'
+      );
+    }
+
     const url = new URL(
       `${postgrestUrl.replace(/\/$/, '')}/${this.table}`
     );
