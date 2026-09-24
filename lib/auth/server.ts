@@ -71,18 +71,40 @@ export async function getServerActor(): Promise<ServerActor | null> {
   const session = verifySessionToken(token);
   if (!session) return null;
 
-  const { data: profile, error } = await supabaseAdmin
+  // Resolve authorization from the live profile on every request. Do not
+  // rely on a stale role embedded in an older session token when the profile
+  // already exists in the database.
+  let { data: profile, error } = await supabaseAdmin
     .from('profiles')
     .select('*')
     .eq('id', session.sub)
     .maybeSingle();
 
+  // Some older self-hosted PostgREST schema caches can temporarily fail an
+  // ID-based profile lookup after schema changes. Fall back to the authenticated
+  // email so a valid staff account is not incorrectly treated as anonymous.
+  if ((error || !profile) && session.email) {
+    const byEmail = await supabaseAdmin
+      .from('profiles')
+      .select('*')
+      .eq('email', session.email.trim().toLowerCase())
+      .maybeSingle();
+
+    if (!byEmail.error && byEmail.data) {
+      profile = byEmail.data;
+      error = null;
+    }
+  }
+
   if (error || !profile || profile.is_active === false) return null;
 
+  const normalizedRole = String(profile.role || session.role || '').trim().toLowerCase();
+  if (!['customer', 'agent', 'admin'].includes(normalizedRole)) return null;
+
   return {
-    id: session.sub,
-    email: session.email,
-    role: profile.role || session.role,
+    id: String(profile.id || session.sub),
+    email: String(profile.email || session.email).trim().toLowerCase(),
+    role: normalizedRole as ServerActor['role'],
     profile,
   };
 }
