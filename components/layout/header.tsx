@@ -48,8 +48,8 @@ export function Header() {
         </div>
 
         <div className="hidden items-center gap-2 md:flex">
-          <Button variant="ghost" size="sm" asChild><Link href="/login"><LogIn className="mr-2 h-4 w-4" />Login</Link></Button>
-          <Button size="sm" className="rounded-xl shadow-sm" asChild><Link href="/register"><UserPlus className="mr-2 h-4 w-4" />Get started</Link></Button>
+          <Link href="/login" className="inline-flex h-9 items-center justify-center rounded-md px-3 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"><LogIn className="mr-2 h-4 w-4" />Login</Link>
+          <Link href="/register" className="inline-flex h-9 items-center justify-center rounded-xl bg-primary px-4 text-sm font-medium text-primary-foreground shadow-sm transition-colors hover:bg-primary/90"><UserPlus className="mr-2 h-4 w-4" />Get started</Link>
         </div>
 
         <button type="button" className="rounded-xl p-2 md:hidden" onClick={() => setMobileOpen(!mobileOpen)} aria-label="Toggle menu">
@@ -69,8 +69,8 @@ export function Header() {
               );
             })}
             <div className="flex gap-2 pt-2">
-              <Button variant="outline" className="flex-1 rounded-xl" asChild><Link href="/login" onClick={() => setMobileOpen(false)}>Login</Link></Button>
-              <Button className="flex-1 rounded-xl" asChild><Link href="/register" onClick={() => setMobileOpen(false)}>Get started</Link></Button>
+              <Link href="/login" onClick={() => setMobileOpen(false)} className="inline-flex h-10 flex-1 items-center justify-center rounded-xl border border-input bg-background px-4 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground">Login</Link>
+              <Link href="/register" onClick={() => setMobileOpen(false)} className="inline-flex h-10 flex-1 items-center justify-center rounded-xl bg-primary px-4 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90">Get started</Link>
             </div>
           </nav>
         </div>
