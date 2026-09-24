@@ -46,7 +46,7 @@ async function main() {
     ...parseEnvFile(envLocalPath),
   };
 
-  let serviceKey = current.SUPABASE_SERVICE_ROLE_KEY;
+  let serviceKey = current.SUPABASE_SERVICE_ROLE_KEY;\n  let duffelKey = current.DUFFEL_API_KEY;
   if (!serviceKey || /^(replace-with|YOUR_)/i.test(serviceKey)) {
     console.log('');
     console.log('Voyago hosted Supabase setup');
@@ -75,7 +75,7 @@ async function main() {
     'POSTGREST_JWT_SECRET=',
     'LOCAL_AUTH_SECRET=' + quote(localAuthSecret),
     'NEXT_PUBLIC_APP_URL=' + quote(current.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'),
-    'FLIGHT_PROVIDER=' + quote(current.FLIGHT_PROVIDER || 'mock'),
+    'FLIGHT_PROVIDER=' + quote(current.FLIGHT_PROVIDER || 'duffel'),\n    'ALLOW_MOCK_PROVIDERS=false',\n    'DUFFEL_API_KEY=' + quote(duffelKey),
     'HOTEL_PROVIDER=' + quote(current.HOTEL_PROVIDER || 'mock'),
     'PAYMENT_PROVIDER=' + quote(current.PAYMENT_PROVIDER || 'manual'),
     'PAYMENT_CURRENCY=' + quote(current.PAYMENT_CURRENCY || 'PKR'),
