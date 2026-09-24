@@ -70,6 +70,7 @@ export default function FlightCheckoutPage() {
         }
 
         setOffer(data.offer as FlightOffer);
+        setRevalidation({ priceChanged: false, valid: true });
         initPassengers();
         setLoading(false);
       })
@@ -162,7 +163,7 @@ export default function FlightCheckoutPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           bookingReference: bookData.reference,
-          amount: offer!.totalPrice,
+          amount: { amount: Number(bookData.pricing?.customerPrice ?? offer!.totalPrice.amount), currency: 'PKR' },
           method: paymentMethod,
           paymentReference,
         }),
@@ -170,6 +171,9 @@ export default function FlightCheckoutPage() {
       const paymentData = await paymentRes.json();
       if (!paymentRes.ok) throw new Error(paymentData.error || 'Payment submission failed');
 
+      const paidAmount = Number(bookData.pricing?.customerPrice ?? offer!.totalPrice.amount);
+      if (!Number.isFinite(paidAmount) || paidAmount <= 0) throw new Error('Booking returned an invalid payment amount');
+      setOffer((current) => current ? { ...current, totalPrice: { amount: paidAmount, currency: 'PKR' } } : current);
       setBookingResult({ reference: bookData.reference, status: paymentData.status || bookData.status });
       setStep('confirmation');
     } catch (err) {
