@@ -2,20 +2,13 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Search, ArrowRight, Users, Calendar } from 'lucide-react';
+import { Search, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { mockAirports } from '@/lib/providers/flights/mock-data';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import type { TripType, CabinClass } from '@/types/flight';
 import { cn } from '@/lib/utils';
 
@@ -31,16 +24,40 @@ export function FlightSearchForm() {
   const [infants, setInfants] = useState(0);
   const [cabinClass, setCabinClass] = useState<CabinClass>('economy');
   const [passengerOpen, setPassengerOpen] = useState(false);
+  const [error, setError] = useState('');
 
   const totalPassengers = adults + children + infants;
 
   const handleSearch = () => {
-    if (!origin || !destination || !departDate) return;
+    const from = origin.trim().toUpperCase();
+    const to = destination.trim().toUpperCase();
+
+    setError('');
+
+    if (!/^[A-Z]{3}$/.test(from) || !/^[A-Z]{3}$/.test(to)) {
+      setError('Enter valid 3-letter IATA airport codes, for example ISB and DXB.');
+      return;
+    }
+
+    if (from === to) {
+      setError('Departure and arrival airports must be different.');
+      return;
+    }
+
+    if (!departDate) {
+      setError('Select a departure date.');
+      return;
+    }
+
+    if (tripType === 'round-trip' && !returnDate) {
+      setError('Select a return date for a round trip.');
+      return;
+    }
 
     const params = new URLSearchParams({
       tripType,
-      origin,
-      destination,
+      origin: from,
+      destination: to,
       departDate,
       adults: adults.toString(),
       children: children.toString(),
@@ -68,36 +85,38 @@ export function FlightSearchForm() {
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
               <Label htmlFor="origin">From</Label>
-              <Select value={origin} onValueChange={setOrigin}>
-                <SelectTrigger id="origin">
-                  <SelectValue placeholder="Departure city" />
-                </SelectTrigger>
-                <SelectContent>
-                  {mockAirports.map((airport) => (
-                    <SelectItem key={airport.code} value={airport.code}>
-                      {airport.city} ({airport.code}) — {airport.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Input
+                id="origin"
+                value={origin}
+                onChange={(e) => {
+                  setOrigin(e.target.value.replace(/[^a-zA-Z]/g, '').slice(0, 3).toUpperCase());
+                  setError('');
+                }}
+                placeholder="IATA code, e.g. ISB"
+                maxLength={3}
+                autoComplete="off"
+              />
             </div>
 
             <div className="space-y-1.5">
               <Label htmlFor="destination">To</Label>
-              <Select value={destination} onValueChange={setDestination}>
-                <SelectTrigger id="destination">
-                  <SelectValue placeholder="Arrival city" />
-                </SelectTrigger>
-                <SelectContent>
-                  {mockAirports.map((airport) => (
-                    <SelectItem key={airport.code} value={airport.code}>
-                      {airport.city} ({airport.code}) — {airport.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Input
+                id="destination"
+                value={destination}
+                onChange={(e) => {
+                  setDestination(e.target.value.replace(/[^a-zA-Z]/g, '').slice(0, 3).toUpperCase());
+                  setError('');
+                }}
+                placeholder="IATA code, e.g. DXB"
+                maxLength={3}
+                autoComplete="off"
+              />
             </div>
           </div>
+
+          <p className="text-xs text-muted-foreground">
+            Use the airport's 3-letter IATA code. Search results and prices come directly from the configured flight provider.
+          </p>
 
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
@@ -125,20 +144,7 @@ export function FlightSearchForm() {
             )}
 
             {tripType === 'one-way' && (
-              <div className="space-y-1.5">
-                <Label htmlFor="cabinClass">Cabin Class</Label>
-                <Select value={cabinClass} onValueChange={(v) => setCabinClass(v as CabinClass)}>
-                  <SelectTrigger id="cabinClass">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="economy">Economy</SelectItem>
-                    <SelectItem value="premium-economy">Premium Economy</SelectItem>
-                    <SelectItem value="business">Business</SelectItem>
-                    <SelectItem value="first">First Class</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+              <CabinSelector id="cabinClass" value={cabinClass} onChange={setCabinClass} />
             )}
           </div>
 
@@ -154,35 +160,10 @@ export function FlightSearchForm() {
                 </PopoverTrigger>
                 <PopoverContent className="w-80" align="start">
                   <div className="space-y-4">
-                    <PassengerRow
-                      label="Adults"
-                      sublabel="12+ years"
-                      value={adults}
-                      onChange={setAdults}
-                      min={1}
-                      max={9}
-                    />
-                    <PassengerRow
-                      label="Children"
-                      sublabel="2-11 years"
-                      value={children}
-                      onChange={setChildren}
-                      min={0}
-                      max={8}
-                    />
-                    <PassengerRow
-                      label="Infants"
-                      sublabel="Under 2 years"
-                      value={infants}
-                      onChange={setInfants}
-                      min={0}
-                      max={4}
-                    />
-                    <Button
-                      className="w-full"
-                      size="sm"
-                      onClick={() => setPassengerOpen(false)}
-                    >
+                    <PassengerRow label="Adults" sublabel="12+ years" value={adults} onChange={setAdults} min={1} max={9} />
+                    <PassengerRow label="Children" sublabel="2-11 years" value={children} onChange={setChildren} min={0} max={8} />
+                    <PassengerRow label="Infants" sublabel="Under 2 years" value={infants} onChange={setInfants} min={0} max={4} />
+                    <Button className="w-full" size="sm" onClick={() => setPassengerOpen(false)}>
                       Done
                     </Button>
                   </div>
@@ -191,22 +172,15 @@ export function FlightSearchForm() {
             </div>
 
             {tripType !== 'one-way' && (
-              <div className="space-y-1.5">
-                <Label htmlFor="cabinClass2">Cabin Class</Label>
-                <Select value={cabinClass} onValueChange={(v) => setCabinClass(v as CabinClass)}>
-                  <SelectTrigger id="cabinClass2">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="economy">Economy</SelectItem>
-                    <SelectItem value="premium-economy">Premium Economy</SelectItem>
-                    <SelectItem value="business">Business</SelectItem>
-                    <SelectItem value="first">First Class</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+              <CabinSelector id="cabinClass2" value={cabinClass} onChange={setCabinClass} />
             )}
           </div>
+
+          {error && (
+            <div role="alert" className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+              {error}
+            </div>
+          )}
 
           <Button size="lg" className="w-full" onClick={handleSearch}>
             <Search className="mr-2 h-4 w-4" />
@@ -214,6 +188,33 @@ export function FlightSearchForm() {
           </Button>
         </div>
       </Tabs>
+    </div>
+  );
+}
+
+function CabinSelector({
+  id,
+  value,
+  onChange,
+}: {
+  id: string;
+  value: CabinClass;
+  onChange: (value: CabinClass) => void;
+}) {
+  return (
+    <div className="space-y-1.5">
+      <Label htmlFor={id}>Cabin Class</Label>
+      <Select value={value} onValueChange={(v) => onChange(v as CabinClass)}>
+        <SelectTrigger id={id}>
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="economy">Economy</SelectItem>
+          <SelectItem value="premium-economy">Premium Economy</SelectItem>
+          <SelectItem value="business">Business</SelectItem>
+          <SelectItem value="first">First Class</SelectItem>
+        </SelectContent>
+      </Select>
     </div>
   );
 }
@@ -241,9 +242,10 @@ function PassengerRow({
       </div>
       <div className="flex items-center gap-3">
         <button
+          type="button"
           className={cn(
             'flex h-8 w-8 items-center justify-center rounded-md border border-border text-sm',
-            value <= min && 'opacity-50 cursor-not-allowed'
+            value <= min && 'cursor-not-allowed opacity-50'
           )}
           disabled={value <= min}
           onClick={() => onChange(value - 1)}
@@ -252,9 +254,10 @@ function PassengerRow({
         </button>
         <span className="w-6 text-center text-sm font-medium">{value}</span>
         <button
+          type="button"
           className={cn(
             'flex h-8 w-8 items-center justify-center rounded-md border border-border text-sm',
-            value >= max && 'opacity-50 cursor-not-allowed'
+            value >= max && 'cursor-not-allowed opacity-50'
           )}
           disabled={value >= max}
           onClick={() => onChange(value + 1)}
