@@ -8,13 +8,21 @@ type QueryResult<T = any> = {
   statusText: string;
 };
 
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.replace(/\/$/, '');
 const postgrestUrl =
-  process.env.POSTGREST_URL || 'http://127.0.0.1:3002';
+  process.env.POSTGREST_URL ||
+  (supabaseUrl ? `${supabaseUrl}/rest/v1` : 'http://127.0.0.1:3002');
+
+const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 const jwtSecret = (() => {
   const value = process.env.POSTGREST_JWT_SECRET;
   if (!value) {
-    if (process.env.NODE_ENV === 'production') throw new Error('POSTGREST_JWT_SECRET is required in production');
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error(
+        'SUPABASE_SERVICE_ROLE_KEY is required for hosted Supabase, or POSTGREST_JWT_SECRET is required for self-hosted PostgREST'
+      );
+    }
     return 'build-placeholder-secret-that-is-long-enough';
   }
   if (value.length < 32) throw new Error('POSTGREST_JWT_SECRET must be at least 32 characters');
@@ -25,7 +33,7 @@ function base64Url(value: string) {
   return Buffer.from(value).toString('base64url');
 }
 
-function createServiceJwt() {
+function createSelfHostedServiceJwt() {
   const header = base64Url(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
 
   const payload = base64Url(
@@ -46,7 +54,7 @@ function createServiceJwt() {
   return `${unsigned}.${signature}`;
 }
 
-const serviceJwt = createServiceJwt();
+const serviceKey = supabaseServiceRoleKey || createSelfHostedServiceJwt();
 
 function encodeValue(value: unknown) {
   return encodeURIComponent(String(value));
@@ -188,8 +196,8 @@ class QueryBuilder {
     }
 
     const headers: Record<string, string> = {
-      Authorization: `Bearer ${serviceJwt}`,
-      apikey: serviceJwt,
+      Authorization: `Bearer ${serviceKey}`,
+      apikey: serviceKey,
       Accept: 'application/json',
       'Accept-Profile': 'public',
     };
