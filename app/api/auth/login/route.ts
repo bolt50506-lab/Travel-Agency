@@ -39,12 +39,16 @@ export async function POST(req: NextRequest) {
 
     const { data: profile } = await supabaseAdmin
       .from('profiles')
-      .select('id,email,full_name,phone,role,is_active')
+      .select('id,email,full_name,phone,role,is_active,email_verified_at')
       .eq('id', account.id)
       .maybeSingle();
 
     if (!profile || profile.is_active === false) {
       return errorResponse('This account is inactive. Please contact the agency.', 'AUTH_ACCOUNT_INACTIVE', 403);
+    }
+
+    if (profile.role === 'customer' && !profile.email_verified_at) {
+      return errorResponse('Please verify your email address before logging in. Check your inbox for the verification link.', 'AUTH_EMAIL_NOT_VERIFIED', 403);
     }
 
 
