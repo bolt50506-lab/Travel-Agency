@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "dev:hosted": "node scripts/use-hosted-supabase.js && next dev",
     "build": "next build && node scripts/prepare-standalone.js",
     "start": "next start",
     "lint": "next lint",
