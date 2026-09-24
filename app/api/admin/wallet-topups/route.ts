@@ -21,7 +21,7 @@ export async function GET(req: NextRequest) {
     const { data: topups, error } = await query;
     if (error) throw error;
 
-    const customerIds = [...new Set((topups || []).map((topup: any) => topup.customer_id).filter(Boolean))];
+    const customerIds = Array.from(new Set((topups || []).map((topup: any) => topup.customer_id).filter(Boolean)));
     let customers: any[] = [];
 
     if (customerIds.length) {
