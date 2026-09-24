@@ -1,7 +1,7 @@
 const crypto = require('crypto');
 const readline = require('readline');
 
-const baseUrl = process.env.POSTGREST_URL || 'http://127.0.0.1:3001';
+const baseUrl = process.env.POSTGREST_URL || 'http://127.0.0.1:3002';
 const secret = process.env.POSTGREST_JWT_SECRET;
 if (!secret || secret.length < 32) {
   console.error('POSTGREST_JWT_SECRET must be set and at least 32 characters long.');
@@ -47,9 +47,9 @@ async function api(path, options = {}) {
 (async () => {
   const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
   try {
-    const email = (await ask(rl, 'Admin email: ')).trim().toLowerCase();
-    const password = await ask(rl, 'Admin password: ');
-    const fullName = (await ask(rl, 'Admin full name: ')).trim();
+    const email = (process.env.ADMIN_EMAIL || await ask(rl, 'Admin email: ')).trim().toLowerCase();
+    const password = process.env.ADMIN_PASSWORD || await ask(rl, 'Admin password: ');
+    const fullName = (process.env.ADMIN_FULL_NAME || await ask(rl, 'Admin full name: ')).trim();
     if (!email || !password || !fullName) throw new Error('Email, password and full name are required.');
 
     // Repair the built-in application roles before creating the first admin.
