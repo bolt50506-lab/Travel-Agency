@@ -336,7 +336,8 @@ export class DuffelFlightProvider implements IFlightProvider {
     );
 
     const offer = mapOffer(response.data, 'economy');
-    const expired = new Date(response.data.expires_at).getTime() <= Date.now();
+    const expiresAt = new Date(response.data.expires_at).getTime();
+    const expired = !Number.isFinite(expiresAt) || expiresAt <= Date.now();
 
     if (expired) {
       return {
