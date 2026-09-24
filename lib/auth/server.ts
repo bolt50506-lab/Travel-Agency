@@ -51,13 +51,15 @@ function verifySessionToken(token: string): SessionPayload | null {
 
   const unsigned = `${parts[0]}.${parts[1]}`;
   const expected = sign(unsigned);
-  const a = Buffer.from(parts[2]);
-  const b = Buffer.from(expected);
-  if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) return null;
 
   try {
+    const actual = Buffer.from(parts[2]);
+    const expectedBuffer = Buffer.from(expected);
+    if (actual.length !== expectedBuffer.length || !crypto.timingSafeEqual(actual, expectedBuffer)) return null;
+
     const payload = JSON.parse(Buffer.from(parts[1], 'base64url').toString('utf8')) as SessionPayload;
     if (!payload.sub || !payload.email || !payload.role || payload.exp <= Math.floor(Date.now() / 1000)) return null;
+    if (!['customer', 'agent', 'admin'].includes(payload.role)) return null;
     return payload;
   } catch {
     return null;
@@ -66,21 +68,33 @@ function verifySessionToken(token: string): SessionPayload | null {
 
 function readCookieHeader(cookieHeader: string | null, name: string) {
   if (!cookieHeader) return null;
-  const prefix = `${name}=`;
+
   for (const part of cookieHeader.split(';')) {
-    const value = part.trim();
-    if (value.startsWith(prefix)) return value.slice(prefix.length);
+    const trimmed = part.trim();
+    const separator = trimmed.indexOf('=');
+    if (separator <= 0) continue;
+
+    const key = trimmed.slice(0, separator);
+    if (key !== name) continue;
+
+    const rawValue = trimmed.slice(separator + 1);
+    try {
+      return decodeURIComponent(rawValue);
+    } catch {
+      return rawValue;
+    }
   }
+
   return null;
 }
 
 function readSessionToken() {
-  const cookieToken = cookies().get('voyago_access_token')?.value;
-  if (cookieToken) return cookieToken;
+  // Prefer the raw request Cookie header. This avoids differences between
+  // Next.js cookie parsing in Node/standalone builds and the login response.
+  const rawHeaderToken = readCookieHeader(headers().get('cookie'), 'voyago_access_token');
+  if (rawHeaderToken) return rawHeaderToken;
 
-  // Fallback for Node/Next request paths where the cookies helper is not
-  // populated even though the browser sent the Cookie header.
-  return readCookieHeader(headers().get('cookie'), 'voyago_access_token');
+  return cookies().get('voyago_access_token')?.value || null;
 }
 
 export async function getServerActor(): Promise<ServerActor | null> {
@@ -90,13 +104,30 @@ export async function getServerActor(): Promise<ServerActor | null> {
   const session = verifySessionToken(token);
   if (!session) return null;
 
-  const { data: profile, error } = await supabaseAdmin
+  // Resolve by the immutable account id first. If a legacy/self-hosted
+  // deployment has a profile whose id is not aligned with local_users,
+  // resolve by normalized email as a safe fallback.
+  const byId = await supabaseAdmin
     .from('profiles')
     .select('*')
     .eq('id', session.sub)
     .maybeSingle();
 
-  if (error || !profile || profile.is_active === false) return null;
+  let profile = byId.data;
+  let profileError = byId.error;
+
+  if (!profile && !profileError) {
+    const byEmail = await supabaseAdmin
+      .from('profiles')
+      .select('*')
+      .eq('email', session.email.toLowerCase())
+      .maybeSingle();
+
+    profile = byEmail.data;
+    profileError = byEmail.error;
+  }
+
+  if (profileError || !profile || profile.is_active === false) return null;
 
   const role = profile.role;
   if (!['customer', 'agent', 'admin'].includes(role)) return null;
