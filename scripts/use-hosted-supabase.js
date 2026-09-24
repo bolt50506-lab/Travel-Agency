@@ -1,4 +1,3 @@
-const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 const readline = require('readline');
@@ -9,6 +8,7 @@ const envPath = path.join(root, '.env');
 
 const PROJECT_URL = 'https://nduynlamswyozeydvbpy.supabase.co';
 
+const fs = require('fs');
 function parseEnvFile(filePath) {
   if (!fs.existsSync(filePath)) return {};
   const values = {};
