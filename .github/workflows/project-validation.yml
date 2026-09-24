@@ -1,0 +1,24 @@
+name: Project Validation
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    env:
+      NODE_ENV: production
+      POSTGREST_JWT_SECRET: ci-placeholder-secret-123456789012345678901234567890
+      LOCAL_AUTH_SECRET: ci-placeholder-local-secret-123456789012345678901234567890
+      POSTGREST_URL: http://127.0.0.1:3002
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run build
