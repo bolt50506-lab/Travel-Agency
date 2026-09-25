@@ -136,6 +136,14 @@ export default function FlightResultsPage() {
     const params = new URLSearchParams(searchParams.toString());
     params.set('offerId', offer.id);
     params.set('searchId', searchId);
+    // Keep the exact signed supplier/customer price snapshot for checkout.
+    // This prevents a provider-specific revalidation response from replacing
+    // the selected fare with an unrelated amount.
+    try {
+      sessionStorage.setItem('destino:selected-flight-offer', JSON.stringify(offer));
+    } catch {
+      // Navigation still works; checkout will fall back to server revalidation.
+    }
     window.location.href = `/flights/checkout?${params.toString()}`;
   };
 
