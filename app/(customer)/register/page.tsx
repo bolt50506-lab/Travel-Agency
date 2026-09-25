@@ -46,8 +46,9 @@ export default function RegisterPage() {
         throw new Error(data.error || 'Registration failed');
       }
 
-      toast.success('Account created. Check your email to verify your account.');
-      router.push(`/verify-email?email=${encodeURIComponent(form.email.trim().toLowerCase())}&next=${encodeURIComponent(nextPath)}`);
+      toast.success('Account created successfully. You are now signed in.');
+      const destination = typeof data.redirectTo === 'string' && data.redirectTo.startsWith('/') ? data.redirectTo : nextPath;
+      router.push(nextPath !== '/' ? nextPath : destination);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong');
     } finally {
