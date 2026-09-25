@@ -50,6 +50,7 @@ async function main() {
   let duffelKey = current.DUFFEL_API_KEY;
   let emailApiKey = current.EMAIL_API_KEY;
   let emailFrom = current.EMAIL_FROM;
+
   if (!serviceKey || /^(replace-with|YOUR_)/i.test(serviceKey)) {
     console.log('');
     console.log('Voyago hosted Supabase setup');
@@ -88,7 +89,7 @@ async function main() {
   }
 
   if (!emailFrom) {
-    console.error('A verified sender email is required for customer email verification.');
+    console.error('A verified sender email is required for customer verification.');
     process.exit(1);
   }
 
@@ -113,7 +114,7 @@ async function main() {
     'HOTEL_PROVIDER=' + quote(current.HOTEL_PROVIDER || 'mock'),
     'PAYMENT_PROVIDER=' + quote(current.PAYMENT_PROVIDER || 'manual'),
     'PAYMENT_CURRENCY=' + quote(current.PAYMENT_CURRENCY || 'PKR'),
-    'EMAIL_PROVIDER=' + quote(current.EMAIL_PROVIDER || 'resend'),
+    'EMAIL_PROVIDER="resend"',
     'EMAIL_FROM=' + quote(emailFrom),
     'EMAIL_API_KEY=' + quote(emailApiKey),
   ];
@@ -148,6 +149,7 @@ async function main() {
   console.log('');
   console.log('Hosted Supabase configuration is ready.');
   console.log('Using: ' + PROJECT_URL);
+  console.log('Email provider: Resend');
   console.log('Saved credentials to .env.local (ignored by Git).');
   console.log('Starting Next.js...');
   console.log('');
