@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerActor } from '@/lib/auth/server';
 import { supabaseAdmin } from '@/lib/supabase/server';
+import crypto from 'crypto';
+import { sendCustomerCredentialsEmail } from '@/lib/services/email-service';
 
 export const dynamic = 'force-dynamic';
 
@@ -58,5 +60,97 @@ export async function GET(req: NextRequest) {
   } catch (error) {
     console.error('Admin customers load error:', error);
     return NextResponse.json({ error: 'Unable to load customers' }, { status: 500 });
+  }
+}
+
+
+function hashPassword(password: string) {
+  const salt = crypto.randomBytes(16).toString('base64url');
+  const N = 16384;
+  const r = 8;
+  const p = 1;
+  const hash = crypto.scryptSync(password, salt, 64, { N, r, p }).toString('base64url');
+  return `scrypt$${N}$${r}$${p}$${salt}$${hash}`;
+}
+
+function generateTemporaryPassword() {
+  return `Destino-${crypto.randomBytes(4).toString('hex')}`;
+}
+
+export async function POST(req: NextRequest) {
+  try {
+    const actor = await getServerActor();
+    if (!actor || actor.role !== 'admin') {
+      return NextResponse.json({ error: 'Admin access required' }, { status: 403 });
+    }
+
+    const body = await req.json();
+    const fullName = String(body.fullName || '').trim();
+    const email = String(body.email || '').trim().toLowerCase();
+    const phone = String(body.phone || '').trim() || null;
+
+    if (!fullName || !email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return NextResponse.json({ error: 'Full name and a valid email are required' }, { status: 400 });
+    }
+
+    const { data: existing } = await supabaseAdmin.from('local_users').select('id').eq('email', email).maybeSingle();
+    if (existing) return NextResponse.json({ error: 'An account with this email already exists' }, { status: 409 });
+
+    const password = generateTemporaryPassword();
+    const { data: account, error: accountError } = await supabaseAdmin
+      .from('local_users')
+      .insert({ email, password_hash: hashPassword(password) })
+      .select('id,email')
+      .single();
+    if (accountError || !account) throw accountError || new Error('Unable to create account');
+
+    try {
+      const { error: profileError } = await supabaseAdmin.from('profiles').insert({
+        id: account.id,
+        email,
+        full_name: fullName,
+        phone,
+        role: 'customer',
+        is_active: true,
+        email_verified_at: new Date().toISOString(),
+      });
+      if (profileError) throw profileError;
+
+      const { error: customerError } = await supabaseAdmin.from('customers').insert({
+        user_id: account.id,
+        full_name: fullName,
+        email,
+        phone,
+        country: 'PK',
+        nationality: 'Pakistani',
+      });
+      if (customerError) throw customerError;
+
+      let emailSent = false;
+      try {
+        await sendCustomerCredentialsEmail({ email, fullName, password });
+        emailSent = true;
+      } catch (emailError) {
+        console.error('Customer credentials email error:', emailError);
+      }
+
+      return NextResponse.json({
+        success: true,
+        customer: { id: account.id, email, fullName, phone },
+        emailSent,
+        temporaryPassword: password,
+        message: emailSent
+          ? 'Customer account created and login credentials sent by email.'
+          : 'Customer account created. Email could not be sent, so copy the temporary password and send it to the customer securely.',
+      }, { status: 201 });
+    } catch (error) {
+      await supabaseAdmin.from('customers').delete().eq('user_id', account.id);
+      await supabaseAdmin.from('profiles').delete().eq('id', account.id);
+      await supabaseAdmin.from('local_users').delete().eq('id', account.id);
+      throw error;
+    }
+  } catch (error) {
+    console.error('Admin customer create error:', error);
+    return NextResponse.json({ error: 'Unable to create customer account' }, { status: 500 });
   }
 }
