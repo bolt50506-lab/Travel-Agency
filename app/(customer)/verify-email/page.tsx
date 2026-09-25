@@ -11,6 +11,10 @@ import { Label } from '@/components/ui/label';
 
 export default function VerifyEmailPage() {
   const params = useSearchParams();
+  const nextPath = (() => {
+    const value = params.get('next');
+    return value && value.startsWith('/') && !value.startsWith('//') ? value : '/';
+  })();
   const status = params.get('status');
   const initialEmail = params.get('email') || '';
   const [email, setEmail] = useState(initialEmail);
@@ -47,7 +51,7 @@ export default function VerifyEmailPage() {
             <CheckCircle2 className="mx-auto h-12 w-12 text-green-600" />
             <h1 className="mt-4 text-2xl font-bold">Email verified</h1>
             <p className="mt-2 text-sm text-muted-foreground">Your customer account is now active. You can log in.</p>
-            <Link href="/login" className="mt-6 flex h-10 w-full items-center justify-center rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90">Go to Login</Link>
+            <Link href={`/login?next=${encodeURIComponent(nextPath)}`} className="mt-6 flex h-10 w-full items-center justify-center rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90">Go to Login</Link>
           </>
         ) : (
           <>
@@ -65,7 +69,7 @@ export default function VerifyEmailPage() {
               {loading ? 'Sending...' : 'Resend Verification Email'}
             </Button>
             {message && <div className="mt-4 flex items-start gap-2 rounded-lg border bg-muted/40 p-3 text-left text-sm"><AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />{message}</div>}
-            <p className="mt-5 text-sm text-muted-foreground"><Link href="/login" className="font-medium text-primary hover:underline">Back to login</Link></p>
+            <p className="mt-5 text-sm text-muted-foreground"><Link href={`/login?next=${encodeURIComponent(nextPath)}`} className="font-medium text-primary hover:underline">Back to login</Link></p>
           </>
         )}
       </Card>
