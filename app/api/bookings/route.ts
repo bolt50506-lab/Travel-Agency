@@ -53,7 +53,9 @@ function customerVisibleDetails(details: any, type: 'flight' | 'hotel') {
       airline: details.airline,
       airlineCode: details.airlineCode,
       segments: details.segments,
-      passengers: details.passengers,
+      // Older booking rows may not have passenger data. Always return a
+      // stable array so customer/admin UIs can safely render the booking.
+      passengers: Array.isArray(details.passengers) ? details.passengers : [],
       cabinClass: details.cabinClass,
       tripType: details.tripType,
       origin: details.origin,
