@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { Eye, Loader2, Search, UserRound, CalendarDays, Mail, Phone, MapPin, CreditCard, Plane, BedDouble } from 'lucide-react';
+import { Eye, Loader2, Search, UserRound, CalendarDays, Mail, Phone, MapPin, CreditCard, Plane, BedDouble, UserPlus, Copy, Check } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -33,6 +33,11 @@ export default function AdminCustomersPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selected, setSelected] = useState<Customer | null>(null);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const [createError, setCreateError] = useState<string | null>(null);
+  const [createdCredentials, setCreatedCredentials] = useState<{ email: string; password: string; emailSent: boolean } | null>(null);
+  const [createForm, setCreateForm] = useState({ fullName: '', email: '', phone: '' });
 
   const load = async () => {
     setLoading(true);
@@ -63,13 +68,38 @@ export default function AdminCustomersPage() {
     bookingValue: customers.reduce((sum, customer) => sum + customer.bookingTotal, 0),
   }), [customers]);
 
+  async function createCustomer() {
+    setCreating(true);
+    setCreateError(null);
+    setCreatedCredentials(null);
+    try {
+      const res = await fetch('/api/admin/customers', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(createForm),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Unable to create customer');
+      setCreatedCredentials({ email: data.customer.email, password: data.temporaryPassword, emailSent: Boolean(data.emailSent) });
+      setCreateForm({ fullName: '', email: '', phone: '' });
+      await load();
+    } catch (err) {
+      setCreateError(err instanceof Error ? err.message : 'Unable to create customer');
+    } finally {
+      setCreating(false);
+    }
+  }
+
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">Customers</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          View customer profiles, contact details and booking activity from the admin workspace.
-        </p>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight">Customers</h1>
+            <p className="mt-1 text-sm text-muted-foreground">View customer profiles, contact details and booking activity from the admin workspace.</p>
+          </div>
+          <Button onClick={() => { setCreateOpen(true); setCreateError(null); setCreatedCredentials(null); }}><UserPlus className="mr-2 h-4 w-4" /> Create customer login</Button>
+        </div>
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
@@ -220,6 +250,39 @@ export default function AdminCustomersPage() {
                   Open fulfillment
                 </Button>
               </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={createOpen} onOpenChange={(open) => { setCreateOpen(open); if (!open) { setCreateError(null); setCreatedCredentials(null); } }}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Create customer login</DialogTitle>
+          </DialogHeader>
+          {createdCredentials ? (
+            <div className="space-y-4">
+              <div className="rounded-xl border border-green-500/30 bg-green-500/5 p-4 text-sm">
+                <p className="font-semibold">{createdCredentials.emailSent ? 'Account created and credentials emailed.' : 'Account created, but email could not be sent.'}</p>
+                <p className="mt-1 text-muted-foreground">{createdCredentials.emailSent ? 'The customer can use the credentials below to sign in.' : 'Send these credentials to the customer securely.'}</p>
+              </div>
+              <div className="space-y-3 rounded-xl border bg-muted/20 p-4">
+                <div><p className="text-xs text-muted-foreground">Email</p><p className="font-medium">{createdCredentials.email}</p></div>
+                <div><p className="text-xs text-muted-foreground">Temporary password</p><p className="font-mono font-semibold">{createdCredentials.password}</p></div>
+              </div>
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" onClick={() => navigator.clipboard?.writeText(`Email: ${createdCredentials.email}\\nPassword: ${createdCredentials.password}`)}><Copy className="mr-2 h-4 w-4" />Copy credentials</Button>
+                <Button onClick={() => setCreateOpen(false)}><Check className="mr-2 h-4 w-4" />Done</Button>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {createError && <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">{createError}</div>}
+              <div className="space-y-1.5"><label className="text-sm font-medium">Full name</label><Input value={createForm.fullName} onChange={(e) => setCreateForm({ ...createForm, fullName: e.target.value })} placeholder="Customer name" /></div>
+              <div className="space-y-1.5"><label className="text-sm font-medium">Email</label><Input type="email" value={createForm.email} onChange={(e) => setCreateForm({ ...createForm, email: e.target.value })} placeholder="customer@example.com" /></div>
+              <div className="space-y-1.5"><label className="text-sm font-medium">Phone</label><Input value={createForm.phone} onChange={(e) => setCreateForm({ ...createForm, phone: e.target.value })} placeholder="+92..." /></div>
+              <p className="text-xs text-muted-foreground">A temporary password will be generated automatically and emailed to the customer.</p>
+              <div className="flex justify-end gap-2"><Button variant="outline" onClick={() => setCreateOpen(false)}>Cancel</Button><Button onClick={() => void createCustomer()} disabled={creating || !createForm.fullName.trim() || !createForm.email.trim()}>{creating ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Creating...</> : <><UserPlus className="mr-2 h-4 w-4" />Create & send login</>}</Button></div>
             </div>
           )}
         </DialogContent>
