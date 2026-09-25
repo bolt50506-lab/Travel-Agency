@@ -50,8 +50,20 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="container-page py-12">
-      <div className="mx-auto max-w-md">
+    <main className="relative min-h-[calc(100vh-4rem)] overflow-hidden bg-[#062f43]">
+      <div
+        aria-hidden="true"
+        className="absolute inset-0 bg-cover bg-center opacity-30"
+        style={{ backgroundImage: "url('/brand/travel-background.svg')" }}
+      />
+      <div aria-hidden="true" className="absolute inset-0 bg-[#062f43]/35" />
+      <div
+        aria-hidden="true"
+        className="absolute inset-0 bg-gradient-to-b from-[#062f43]/35 via-[#062f43]/20 to-[#062f43]/80"
+      />
+
+      <div className="relative z-10 px-4 py-10 sm:px-6 sm:py-14">
+        <div className="mx-auto max-w-md">
         <div className="mb-6 flex justify-center">
           <div className="rounded-2xl bg-white px-5 py-3 shadow-lg ring-1 ring-border">
             <BrandLogo />
@@ -163,7 +175,8 @@ export default function RegisterPage() {
             </Link>
           </p>
         </Card>
+        </div>
       </div>
-    </div>
+    </main>
   );
 }
