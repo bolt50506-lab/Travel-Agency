@@ -44,20 +44,26 @@ export default function FlightCheckoutPage() {
   const totalPassengers = adults + children + infants;
 
   useEffect(() => {
-    try {
-      const session = await fetch('/api/auth/session', { cache: 'no-store' }).then((res) => res.json());
-      if (!['customer', 'agent', 'admin'].includes(session.role)) {
+    const ensureAuthenticated = async () => {
+      try {
+        const session = await fetch('/api/auth/session', { cache: 'no-store' }).then((res) => res.json());
+        if (!['customer', 'agent', 'admin'].includes(session.role)) {
+          const next = window.location.pathname + window.location.search;
+          window.location.href = `/register?next=${encodeURIComponent(next)}`;
+          return false;
+        }
+        return true;
+      } catch {
         const next = window.location.pathname + window.location.search;
         window.location.href = `/register?next=${encodeURIComponent(next)}`;
-        return;
+        return false;
       }
-    } catch {
-      const next = window.location.pathname + window.location.search;
-      window.location.href = `/login?next=${encodeURIComponent(next)}`;
-      return;
-    }
+    };
 
-    if (!offerId) {
+    ensureAuthenticated().then((authenticated) => {
+      if (!authenticated) return;
+
+      if (!offerId) {
       setError('No flight selected. Please search and select a flight first.');
       setLoading(false);
       return;
@@ -103,6 +109,7 @@ export default function FlightCheckoutPage() {
         setError(err instanceof Error ? err.message : 'Failed to load selected flight');
         setLoading(false);
       });
+    });
   }, [offerId]);
 
 
