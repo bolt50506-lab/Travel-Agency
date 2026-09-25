@@ -48,6 +48,44 @@ export async function POST(req: NextRequest) {
 
     if (!result.offer) return successResponse(result);
 
+    // Revalidation returns the supplier offer. Restore the signed customer
+    // pricing snapshot when one was supplied so checkout keeps the exact fare
+    // that was shown during search.
+    let customerOffer = result.offer;
+
+    if (signedSnapshot) {
+      customerOffer = {
+        ...result.offer,
+        totalPrice: { amount: signedSnapshot.customerPrice, currency: 'PKR' },
+        basePrice: { amount: signedSnapshot.supplierCost, currency: 'PKR' },
+        taxesAndFees: { amount: signedSnapshot.taxes, currency: 'PKR' },
+        pricingToken: validation.data.pricingToken,
+      };
+    } else {
+      const pricing = await calculateAgencyPrice({
+        supplierCost: Number(result.offer.basePrice?.amount || 0),
+        taxes: Number(result.offer.taxesAndFees?.amount || 0),
+        context: {
+          product: 'flight',
+          supplier: result.offer.provider,
+          airline: result.offer.segments?.[0]?.airline?.code,
+          route:
+            result.offer.segments?.[0]?.origin?.code &&
+            result.offer.segments?.[0]?.destination?.code
+              ? `${result.offer.segments[0].origin.code}-${result.offer.segments[0].destination.code}`
+              : undefined,
+        },
+      });
+
+      customerOffer = {
+        ...result.offer,
+        totalPrice: { amount: pricing.customerPrice, currency: 'PKR' },
+        basePrice: { amount: pricing.supplierCost, currency: 'PKR' },
+        taxesAndFees: { amount: pricing.taxes, currency: 'PKR' },
+        pricingToken: sealRevalidationToken(pricing),
+      };
+    }
+
     return successResponse({
       ...result,
       offer: customerOffer,
