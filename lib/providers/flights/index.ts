@@ -1,6 +1,8 @@
 import type { IFlightProvider } from './flight-provider';
 import { DuffelFlightProvider } from './duffel-flight-provider';
+import { LetsFGFlightProvider } from './letsfg-flight-provider';
 import { MockFlightProvider } from './mock-flight-provider';
+import { MultiFlightProvider } from './multi-flight-provider';
 
 let flightProvider: IFlightProvider | null = null;
 
@@ -11,6 +13,13 @@ export function getFlightProvider(): IFlightProvider {
     switch (providerName) {
       case 'duffel':
         flightProvider = new DuffelFlightProvider();
+        break;
+      case 'letsfg':
+        flightProvider = new LetsFGFlightProvider();
+        break;
+      case 'multi':
+      case 'all':
+        flightProvider = new MultiFlightProvider();
         break;
       case 'mock':
         if (process.env.ALLOW_MOCK_PROVIDERS !== 'true') {
