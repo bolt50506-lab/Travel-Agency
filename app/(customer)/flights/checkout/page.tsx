@@ -44,6 +44,19 @@ export default function FlightCheckoutPage() {
   const totalPassengers = adults + children + infants;
 
   useEffect(() => {
+    try {
+      const session = await fetch('/api/auth/session', { cache: 'no-store' }).then((res) => res.json());
+      if (!['customer', 'agent', 'admin'].includes(session.role)) {
+        const next = window.location.pathname + window.location.search;
+        window.location.href = `/login?next=${encodeURIComponent(next)}`;
+        return;
+      }
+    } catch {
+      const next = window.location.pathname + window.location.search;
+      window.location.href = `/login?next=${encodeURIComponent(next)}`;
+      return;
+    }
+
     if (!offerId) {
       setError('No flight selected. Please search and select a flight first.');
       setLoading(false);
