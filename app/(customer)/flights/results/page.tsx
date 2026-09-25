@@ -140,21 +140,13 @@ export default function FlightResultsPage() {
 
     try {
       const session = await fetch('/api/auth/session', { cache: 'no-store' }).then((res) => res.json());
-      if (session.role === 'customer') {
+      if (['customer', 'agent', 'admin'].includes(session.role)) {
         try {
           sessionStorage.setItem('destino:selected-flight-offer', JSON.stringify(offer));
         } catch {
           // Checkout can fall back to server revalidation.
         }
         window.location.href = checkoutPath;
-        return;
-      }
-      if (session.role === 'admin') {
-        window.location.href = '/admin';
-        return;
-      }
-      if (session.role === 'agent') {
-        window.location.href = '/agent';
         return;
       }
     } catch {
