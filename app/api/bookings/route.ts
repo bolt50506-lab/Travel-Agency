@@ -229,6 +229,14 @@ export async function POST(req: NextRequest) {
     if (!body.contactEmail || !body.contactPhone) return errorResponse('Contact details are required', 'VALIDATION_ERROR', 400);
 
     const actor = await getServerActor();
+    if (!actor || !['customer', 'agent', 'admin'].includes(actor.role)) {
+      return errorResponse(
+        'Login required to complete a booking. Flights and hotels can be viewed without an account.',
+        'AUTH_REQUIRED',
+        401
+      );
+    }
+
     const details = body.flightDetails || body.hotelDetails || {};
     const passengerOrGuest = details.passengers?.[0] || details.guests?.[0];
     const customerName = passengerOrGuest
