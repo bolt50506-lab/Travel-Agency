@@ -111,11 +111,31 @@ export default function HotelResultsPage() {
     return Array.from(set).sort();
   }, [offers]);
 
-  const handleSelectHotel = (hotel: HotelOffer) => {
+  const handleSelectHotel = async (hotel: HotelOffer) => {
     const params = new URLSearchParams(searchParams.toString());
     params.set('hotelId', hotel.id);
     params.set('searchId', searchId);
-    window.location.href = `/hotels/checkout?${params.toString()}`;
+    const checkoutPath = `/hotels/checkout?${params.toString()}`;
+
+    try {
+      const session = await fetch('/api/auth/session', { cache: 'no-store' }).then((res) => res.json());
+      if (session.role === 'customer') {
+        window.location.href = checkoutPath;
+        return;
+      }
+      if (session.role === 'admin') {
+        window.location.href = '/admin';
+        return;
+      }
+      if (session.role === 'agent') {
+        window.location.href = '/agent';
+        return;
+      }
+    } catch {
+      // Continue to the customer registration entry point.
+    }
+
+    window.location.href = `/register?next=${encodeURIComponent(checkoutPath)}`;
   };
 
   return (
