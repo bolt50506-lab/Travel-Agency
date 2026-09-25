@@ -107,7 +107,7 @@ export default function BookingsPage() {
       {!loading && !error && filtered.length > 0 && (
         <div className="space-y-3">
           {filtered.map((booking) => {
-            const hasVisibleDocs = booking.documents.some((d) => d.customerVisible);
+            const hasVisibleDocs = (booking.documents || []).some((d) => d.customerVisible);
             const isProcessing = !['TICKETED', 'VOUCHER_ISSUED', 'COMPLETED', 'CANCELLED', 'REFUNDED', 'FAILED'].includes(booking.status);
             return (
               <Card key={booking.id} className="p-4">
@@ -134,7 +134,7 @@ export default function BookingsPage() {
                       </div>
                       {booking.type === 'flight' && booking.flightDetails && (
                         <div className="text-sm text-muted-foreground">
-                          {booking.flightDetails.passengers.length} passenger(s)
+                          {(booking.flightDetails.passengers || []).length} passenger(s)
                           {booking.fulfillment?.pnr && <span> · PNR: {booking.fulfillment.pnr}</span>}
                         </div>
                       )}
