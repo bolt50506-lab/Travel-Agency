@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1000" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#062f43"/>
+      <stop offset=".48" stop-color="#17627a"/>
+      <stop offset="1" stop-color="#0b2d45"/>
+    </linearGradient>
+    <radialGradient id="sun" cx="50%" cy="42%" r="35%">
+      <stop offset="0" stop-color="#e9c85c" stop-opacity=".8"/>
+      <stop offset="1" stop-color="#e9c85c" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="blur"><feGaussianBlur stdDeviation="22"/></filter>
+    <path id="route" d="M-100 690 C280 180 560 850 930 360 S1420 180 1740 560" fill="none"/>
+  </defs>
+  <rect width="1600" height="1000" fill="url(#sky)"/>
+  <circle cx="820" cy="420" r="430" fill="url(#sun)" filter="url(#blur)"/>
+  <g opacity=".28" fill="none" stroke="#fff" stroke-width="2">
+    <ellipse cx="800" cy="520" rx="680" ry="245" transform="rotate(-9 800 520)"/>
+    <ellipse cx="800" cy="520" rx="680" ry="245" transform="rotate(18 800 520)"/>
+  </g>
+  <g opacity=".22" fill="#fff">
+    <path d="M160 280h180l38 22-38 22H160l-38-22z"/>
+    <path d="M1120 720h210l44 24-44 24h-210l-44-24z"/>
+    <path d="M510 150h130l30 18-30 18H510l-30-18z"/>
+  </g>
+  <g opacity=".55" fill="none" stroke="#d2a92f" stroke-width="5" stroke-linecap="round" stroke-dasharray="14 18">
+    <use href="#route"/>
+  </g>
+  <g fill="#fff" opacity=".65">
+    <circle cx="220" cy="640" r="7"/><circle cx="620" cy="560" r="7"/><circle cx="1040" cy="430" r="7"/><circle cx="1380" cy="350" r="7"/>
+  </g>
+  <g fill="#fff" opacity=".16">
+    <circle cx="240" cy="780" r="90"/><circle cx="1420" cy="780" r="130"/><circle cx="760" cy="820" r="100"/>
+  </g>
+  <g>
+    <g transform="translate(-90 0)">
+      <animateMotion dur="12s" repeatCount="indefinite" rotate="auto">
+        <mpath href="#route"/>
+      </animateMotion>
+      <path d="M0-14 L42 0 0 14 10 2-20 1-32 18-38 16-27 0-38-16-32-18-20-1 10-2Z" fill="#fff" opacity=".95"/>
+    </g>
+  </g>
+  <g opacity=".25" fill="#fff">
+    <circle cx="80" cy="120" r="2"/><circle cx="320" cy="90" r="3"/><circle cx="900" cy="120" r="2"/><circle cx="1280" cy="180" r="3"/><circle cx="1510" cy="100" r="2"/>
+  </g>
+</svg>
