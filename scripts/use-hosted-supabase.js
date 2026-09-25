@@ -48,6 +48,8 @@ async function main() {
 
   let serviceKey = current.SUPABASE_SERVICE_ROLE_KEY;
   let duffelKey = current.DUFFEL_API_KEY;
+  let emailApiKey = current.EMAIL_API_KEY;
+  let emailFrom = current.EMAIL_FROM;
   if (!serviceKey || /^(replace-with|YOUR_)/i.test(serviceKey)) {
     console.log('');
     console.log('Voyago hosted Supabase setup');
@@ -68,6 +70,25 @@ async function main() {
 
   if (!duffelKey) {
     console.error('A Duffel TEST API key is required for flight search.');
+    process.exit(1);
+  }
+
+  if (!emailApiKey || /^(replace-with|YOUR_|undefined|null)$/i.test(emailApiKey)) {
+    console.log('');
+    emailApiKey = await prompt('Paste the Resend API key for customer verification emails (stored only in .env.local): ');
+  }
+
+  if (!emailApiKey) {
+    console.error('A Resend API key is required for customer email verification.');
+    process.exit(1);
+  }
+
+  if (!emailFrom) {
+    emailFrom = await prompt('Enter the verified sender email for customer verification (for example, bookings@yourdomain.com): ');
+  }
+
+  if (!emailFrom) {
+    console.error('A verified sender email is required for customer email verification.');
     process.exit(1);
   }
 
@@ -92,7 +113,9 @@ async function main() {
     'HOTEL_PROVIDER=' + quote(current.HOTEL_PROVIDER || 'mock'),
     'PAYMENT_PROVIDER=' + quote(current.PAYMENT_PROVIDER || 'manual'),
     'PAYMENT_CURRENCY=' + quote(current.PAYMENT_CURRENCY || 'PKR'),
-    'EMAIL_PROVIDER=' + quote(current.EMAIL_PROVIDER || 'mock'),
+    'EMAIL_PROVIDER=' + quote(current.EMAIL_PROVIDER || 'resend'),
+    'EMAIL_FROM=' + quote(emailFrom),
+    'EMAIL_API_KEY=' + quote(emailApiKey),
   ];
 
   const optionalKeys = [
@@ -112,7 +135,6 @@ async function main() {
     'RAAST_ID',
     'JAZZCASH_NUMBER',
     'EASYPAISA_NUMBER',
-    'EMAIL_API_KEY',
     'WHATSAPP_API_TOKEN',
     'WHATSAPP_PHONE_NUMBER_ID',
   ];
