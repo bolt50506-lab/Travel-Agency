@@ -187,7 +187,7 @@ class QueryBuilder {
     }
 
     const url = new URL(
-`${postgrestUrl.replace(/\/$/, '')}/rpc/${encodeURIComponent(functionName)}`,
+`${postgrestUrl.replace(/\/$/, '')}/${this.table}`
     );
 
     if (this.method === 'GET') {
@@ -296,7 +296,7 @@ async function callRpc(functionName: string, args: Record<string, unknown>) {
   }
 
   const response = await fetch(
-    `${postgrestUrl.replace(/\\/$/, '')}/rpc/${encodeURIComponent(functionName)}`,
+    `${postgrestUrl.replace(/\/$/, '')}/rpc/${encodeURIComponent(functionName)}`,
     {
       method: 'POST',
       headers: {
