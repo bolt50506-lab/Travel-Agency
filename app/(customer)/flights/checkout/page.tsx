@@ -53,13 +53,25 @@ export default function FlightCheckoutPage() {
     const sid = searchParams.get('searchId') || '';
     setSearchId(sid);
 
+    let selectedOffer: FlightOffer | null = null;
+    try {
+      const raw = sessionStorage.getItem('destino:selected-flight-offer');
+      if (raw) selectedOffer = JSON.parse(raw) as FlightOffer;
+    } catch {
+      selectedOffer = null;
+    }
+    const pricingToken = selectedOffer?.pricingToken || '';
+
+    // Do not perform a new flight search here. Supplier offer IDs are tied to
+    // the original search. Send the signed pricing snapshot and the exact
+    // selected offer so checkout cannot display a different provider amount.
     // Do not perform a new flight search here. Duffel offer IDs are tied to
     // the original offer and a fresh offer request produces different IDs.
     // Load the selected offer directly from Duffel through revalidation.
     fetch('/api/flights/revalidate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ offerId, searchId: sid }),
+      body: JSON.stringify({ offerId, searchId: sid, pricingToken: pricingToken || undefined, selectedOffer: selectedOffer || undefined }),
     })
       .then(async (res) => {
         const data = await res.json().catch(() => ({}));
@@ -120,7 +132,7 @@ export default function FlightCheckoutPage() {
       const res = await fetch('/api/flights/revalidate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ offerId, searchId }),
+        body: JSON.stringify({ offerId, searchId, pricingToken: offer?.pricingToken || undefined, selectedOffer: offer || undefined }),
       });
       const data = await res.json();
 
