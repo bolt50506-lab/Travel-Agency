@@ -123,7 +123,23 @@ function mapSegment(segment: LetsFGSegment, cabinClass: CabinClass, index: numbe
   };
 }
 
-function mapOffer(offer: LetsFGOffer, cabinClass: CabinClass): FlightOffer {
+const FX_CACHE = new Map<string, { rate: number; expiresAt: number }>();
+
+async function toPkr(amount: number, currency: string): Promise<number> {
+  const normalized = (currency || 'PKR').toUpperCase();
+  if (!Number.isFinite(amount) || normalized === 'PKR') return amount;
+  const cached = FX_CACHE.get(normalized);
+  if (cached && cached.expiresAt > Date.now()) return amount * cached.rate;
+  const response = await fetch(`https://open.er-api.com/v6/latest/${encodeURIComponent(normalized)}`, { cache: 'no-store' });
+  if (!response.ok) throw new Error(`FX_RATE_UNAVAILABLE: ${normalized}/PKR`);
+  const data = (await response.json()) as { rates?: Record<string, number> };
+  const rate = Number(data.rates?.PKR);
+  if (!Number.isFinite(rate) || rate <= 0) throw new Error(`FX_RATE_UNAVAILABLE: ${normalized}/PKR`);
+  FX_CACHE.set(normalized, { rate, expiresAt: Date.now() + 5 * 60 * 1000 });
+  return amount * rate;
+}
+
+async function mapOffer(offer: LetsFGOffer, cabinClass: CabinClass): Promise<FlightOffer> {
   const rawSegments = [
     ...(offer.outbound?.segments || []),
     ...(offer.inbound?.segments || []),
@@ -152,13 +168,14 @@ function mapOffer(offer: LetsFGOffer, cabinClass: CabinClass): FlightOffer {
         seatsAvailable: 0,
       }];
 
-  const total = Number(offer.price);
+  const sourceCurrency = (offer.currency || 'USD').toUpperCase();
+  const total = await toPkr(Number(offer.price), sourceCurrency);
   return {
     id: offer.id,
     segments,
-    totalPrice: { amount: Math.round(total), currency: (offer.currency || 'USD').toUpperCase() },
-    basePrice: { amount: Math.round(total), currency: (offer.currency || 'USD').toUpperCase() },
-    taxesAndFees: { amount: 0, currency: (offer.currency || 'USD').toUpperCase() },
+    totalPrice: { amount: Math.round(total), currency: 'PKR' },
+    basePrice: { amount: Math.round(total), currency: 'PKR' },
+    taxesAndFees: { amount: 0, currency: 'PKR' },
     stops: Math.max(0, segments.length - 1),
     totalDuration: durationFromSegments(segments),
     refundable: Boolean(offer.refundable),
@@ -216,9 +233,9 @@ export class LetsFGFlightProvider implements IFlightProvider {
       }),
     });
 
-    const offers = (response.offers || [])
+    const offers = (await Promise.all((response.offers || [])
       .filter((offer) => offer.id && Number.isFinite(Number(offer.price)))
-      .map((offer) => mapOffer(offer, query.cabinClass));
+      .map((offer) => mapOffer(offer, query.cabinClass))));
 
     offers.sort((a, b) => a.totalPrice.amount - b.totalPrice.amount);
 
