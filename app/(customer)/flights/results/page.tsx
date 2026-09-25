@@ -132,19 +132,36 @@ export default function FlightResultsPage() {
     return mockAirlines.filter((a) => codes.has(a.code));
   }, [offers]);
 
-  const handleSelectFlight = (offer: FlightOffer) => {
+  const handleSelectFlight = async (offer: FlightOffer) => {
     const params = new URLSearchParams(searchParams.toString());
     params.set('offerId', offer.id);
     params.set('searchId', searchId);
-    // Keep the exact signed supplier/customer price snapshot for checkout.
-    // This prevents a provider-specific revalidation response from replacing
-    // the selected fare with an unrelated amount.
+    const checkoutPath = `/flights/checkout?${params.toString()}`;
+
     try {
-      sessionStorage.setItem('destino:selected-flight-offer', JSON.stringify(offer));
+      const session = await fetch('/api/auth/session', { cache: 'no-store' }).then((res) => res.json());
+      if (session.role === 'customer') {
+        try {
+          sessionStorage.setItem('destino:selected-flight-offer', JSON.stringify(offer));
+        } catch {
+          // Checkout can fall back to server revalidation.
+        }
+        window.location.href = checkoutPath;
+        return;
+      }
+      if (session.role === 'admin') {
+        window.location.href = '/admin';
+        return;
+      }
+      if (session.role === 'agent') {
+        window.location.href = '/agent';
+        return;
+      }
     } catch {
-      // Navigation still works; checkout will fall back to server revalidation.
+      // Continue to the customer registration entry point.
     }
-    window.location.href = `/flights/checkout?${params.toString()}`;
+
+    window.location.href = `/register?next=${encodeURIComponent(checkoutPath)}`;
   };
 
   return (
