@@ -51,8 +51,59 @@ export async function POST(req: NextRequest) {
       return errorResponse('Forbidden', 'FORBIDDEN', 403);
     }
 
-    const allowed = ['bank_transfer', 'raast', 'jazzcash', 'easypaisa', 'manual', 'card'];
+    const allowed = ['bank_transfer', 'raast', 'jazzcash', 'easypaisa', 'manual', 'card', 'wallet'];
     if (!allowed.includes(input.method)) return errorResponse('Unsupported payment method', 'PAYMENT_METHOD_INVALID', 400);
+
+    if (input.method === 'wallet') {
+      if (!actor || actor.role !== 'customer') {
+        return errorResponse('Wallet payment is available to customers only', 'WALLET_CUSTOMER_REQUIRED', 403);
+      }
+
+      const { data: customer } = await supabaseAdmin
+        .from('customers')
+        .select('id')
+        .eq('user_id', actor.id)
+        .maybeSingle();
+
+      if (!customer || customer.id !== booking.customer_id) {
+        return errorResponse('Forbidden', 'FORBIDDEN', 403);
+      }
+
+      const { data: walletPayment, error: walletPaymentError } = await supabaseAdmin.rpc(
+        'pay_booking_from_wallet',
+        {
+          p_booking_id: booking.id,
+          p_customer_id: customer.id,
+          p_amount: amount,
+          p_actor_id: actor.id,
+        },
+      );
+
+      if (walletPaymentError) {
+        const message = String(walletPaymentError.message || '');
+        if (message.includes('WALLET_INSUFFICIENT_BALANCE')) {
+          return errorResponse('Insufficient wallet balance for this booking.', 'WALLET_INSUFFICIENT_BALANCE', 409);
+        }
+        if (message.includes('WALLET_NOT_FOUND')) {
+          return errorResponse('Customer wallet was not found.', 'WALLET_NOT_FOUND', 404);
+        }
+        if (message.includes('PAYMENT_AMOUNT_MISMATCH')) {
+          return errorResponse('Payment amount does not match the booking.', 'PAYMENT_AMOUNT_MISMATCH', 409);
+        }
+        throw walletPaymentError;
+      }
+
+      const result = Array.isArray(walletPayment) ? walletPayment[0] : walletPayment;
+      return successResponse({
+        paymentId: result?.payment_id,
+        reference: result?.payment_reference,
+        status: 'VERIFIED',
+        bookingReference: booking.reference,
+        bookingStatus: 'PAYMENT_RECEIVED',
+        walletBalance: Number(result?.new_balance ?? 0),
+        message: 'Booking paid successfully from your wallet.',
+      }, 201);
+    }
 
     const idempotencyKey = req.headers.get('idempotency-key');
     if (idempotencyKey) {
