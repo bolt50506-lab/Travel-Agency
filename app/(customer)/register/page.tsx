@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Mail, Lock, User, Phone, Loader2, AlertCircle } from 'lucide-react';
@@ -13,6 +14,11 @@ import { toast } from 'sonner';
 
 export default function RegisterPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const nextPath = (() => {
+    const value = searchParams.get('next');
+    return value && value.startsWith('/') && !value.startsWith('//') ? value : '/';
+  })();
   const [form, setForm] = useState({
     firstName: '',
     lastName: '',
@@ -41,7 +47,7 @@ export default function RegisterPage() {
       }
 
       toast.success('Account created. Check your email to verify your account.');
-      router.push(`/verify-email?email=${encodeURIComponent(form.email.trim().toLowerCase())}`);
+      router.push(`/verify-email?email=${encodeURIComponent(form.email.trim().toLowerCase())}&next=${encodeURIComponent(nextPath)}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong');
     } finally {
@@ -175,7 +181,7 @@ export default function RegisterPage() {
 
           <p className="mt-4 text-center text-sm text-muted-foreground">
             Already have an account?{' '}
-            <Link href="/login" className="font-medium text-primary hover:underline">
+            <Link href={`/login?next=${encodeURIComponent(nextPath)}`} className="font-medium text-primary hover:underline">
               Log in
             </Link>
           </p>
