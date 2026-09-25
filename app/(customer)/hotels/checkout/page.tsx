@@ -44,7 +44,26 @@ export default function HotelCheckoutPage() {
   const nights = useMemo(() => Math.max(1, Math.round((new Date(checkOut).getTime() - new Date(checkIn).getTime()) / 86400000)), [checkIn, checkOut]);
 
   useEffect(() => {
-    if (!hotelId) {
+    const ensureAuthenticated = async () => {
+      try {
+        const session = await fetch('/api/auth/session', { cache: 'no-store' }).then((res) => res.json());
+        if (!['customer', 'agent', 'admin'].includes(session.role)) {
+          const next = window.location.pathname + window.location.search;
+          window.location.href = `/login?next=${encodeURIComponent(next)}`;
+          return false;
+        }
+        return true;
+      } catch {
+        const next = window.location.pathname + window.location.search;
+        window.location.href = `/login?next=${encodeURIComponent(next)}`;
+        return false;
+      }
+    };
+
+    ensureAuthenticated().then((authenticated) => {
+      if (!authenticated) return;
+
+      if (!hotelId) {
       setError('No hotel selected. Please search and select a hotel first.');
       setLoading(false);
       return;
@@ -73,6 +92,7 @@ export default function HotelCheckoutPage() {
         setError(err.message);
         setLoading(false);
       });
+    });
   }, [hotelId, destination, checkIn, checkOut, numGuests, numRooms]);
 
   const handleSelectRoom = (room: HotelRoom) => {
