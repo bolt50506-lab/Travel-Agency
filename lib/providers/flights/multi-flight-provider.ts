@@ -72,15 +72,29 @@ export class MultiFlightProvider implements IFlightProvider {
     return entry.provider;
   }
 
+  private providerSearchId(searchId: string, providerKey: string) {
+    const match = searchId.split('|').find((part) => part.startsWith(`${providerKey}::`));
+    return match ? unwrapId(match).id : unwrapId(searchId).id;
+  }
+
   async revalidate(request: RevalidateRequest): Promise<RevalidateResponse> {
     const offer = unwrapId(request.offerId);
     const search = unwrapId(request.searchId);
-    return this.getProvider(offer.provider || search.provider).revalidate({ offerId: offer.id, searchId: search.id });
+    const providerKey = offer.provider || search.provider;
+    return this.getProvider(providerKey).revalidate({
+      offerId: offer.id,
+      searchId: this.providerSearchId(request.searchId, providerKey),
+    });
   }
 
   async book(request: FlightBookingRequest): Promise<FlightBookingResult> {
     const offer = unwrapId(request.offerId);
     const search = unwrapId(request.searchId);
-    return this.getProvider(offer.provider || search.provider).book({ ...request, offerId: offer.id, searchId: search.id });
+    const providerKey = offer.provider || search.provider;
+    return this.getProvider(providerKey).book({
+      ...request,
+      offerId: offer.id,
+      searchId: this.providerSearchId(request.searchId, providerKey),
+    });
   }
 }
