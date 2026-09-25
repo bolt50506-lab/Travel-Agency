@@ -49,7 +49,7 @@ export default function HotelCheckoutPage() {
         const session = await fetch('/api/auth/session', { cache: 'no-store' }).then((res) => res.json());
         if (!['customer', 'agent', 'admin'].includes(session.role)) {
           const next = window.location.pathname + window.location.search;
-          window.location.href = `/login?next=${encodeURIComponent(next)}`;
+          window.location.href = `/register?next=${encodeURIComponent(next)}`;
           return false;
         }
         return true;
