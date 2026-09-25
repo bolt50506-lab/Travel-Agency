@@ -5,6 +5,7 @@ import { NextRequest } from 'next/server';
 import { registerSchema } from '@/lib/validation/schemas';
 import { successResponse, errorResponse, validateBody } from '@/lib/utils/api';
 import { supabaseAdmin } from '@/lib/supabase/server';
+import { sendCustomerVerificationEmail } from '@/lib/services/email-service';
 
 function hashPassword(password: string) {
   const salt = crypto.randomBytes(16).toString('base64url');
@@ -17,37 +18,6 @@ function hashPassword(password: string) {
 
 function hashVerificationToken(token: string) {
   return crypto.createHash('sha256').update(token).digest('hex');
-}
-
-async function sendVerificationEmail(email: string, fullName: string, token: string) {
-  const apiKey = process.env.EMAIL_API_KEY || process.env.RESEND_API_KEY;
-  const from = process.env.EMAIL_FROM || process.env.RESEND_FROM_EMAIL;
-  const appUrl = (process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000').replace(/\/$/, '');
-
-  if (!apiKey || !from) throw new Error('EMAIL_NOT_CONFIGURED');
-
-  const verificationUrl = `${appUrl}/verify-email?token=${encodeURIComponent(token)}`;
-  const response = await fetch('https://api.resend.com/emails', {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      from,
-      to: [email],
-      subject: 'Verify your Destino Travels email',
-      html: `<div style="font-family:Arial,sans-serif;max-width:600px;margin:auto;padding:32px">
-        <h2>Verify your Destino Travels account</h2>
-        <p>Hello ${fullName || 'there'},</p>
-        <p>Please verify your email address to activate your customer account.</p>
-        <p><a href="${verificationUrl}" style="display:inline-block;padding:12px 20px;background:#cda631;color:#fff;text-decoration:none;border-radius:6px">Verify Email</a></p>
-        <p>This link expires in 24 hours.</p>
-        <p>If you did not create this account, you can ignore this email.</p>
-      </div>`,
-    }),
-  });
-  if (!response.ok) {
-    console.error('Verification email provider error:', await response.text());
-    throw new Error('EMAIL_SEND_FAILED');
-  }
 }
 
 export async function POST(req: NextRequest) {
@@ -95,7 +65,7 @@ export async function POST(req: NextRequest) {
 
     let verificationEmailSent = false;
     try {
-      await sendVerificationEmail(email, fullName, rawToken);
+      await sendCustomerVerificationEmail({ email, fullName, token: rawToken });
       verificationEmailSent = true;
     } catch (emailError) {
       console.error('Verification email error:', emailError);
