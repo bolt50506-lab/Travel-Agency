@@ -76,3 +76,55 @@ export async function sendCustomerVerificationEmail({
     throw new Error('EMAIL_SEND_FAILED');
   }
 }
+
+
+export async function sendCustomerCredentialsEmail({
+  email,
+  fullName,
+  password,
+}: {
+  email: string;
+  fullName?: string | null;
+  password: string;
+}) {
+  const { provider, apiKey, from, appUrl } = getConfig();
+
+  if (provider !== 'resend') {
+    throw new Error('EMAIL_PROVIDER_UNSUPPORTED');
+  }
+
+  const safeName = escapeHtml(fullName?.trim() || 'there');
+  const safeEmail = escapeHtml(email);
+  const safePassword = escapeHtml(password);
+  const loginUrl = `${appUrl}/login`;
+
+  const response = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      from,
+      to: [email],
+      subject: 'Your Destino Travels customer login',
+      html: `<div style="font-family:Arial,sans-serif;max-width:600px;margin:auto;padding:32px;color:#17202a">
+        <h2 style="margin-bottom:16px">Your Destino Travels account is ready</h2>
+        <p>Hello ${safeName},</p>
+        <p>The travel agency has created your customer account. You can use these credentials to sign in:</p>
+        <div style="margin:24px 0;padding:18px;background:#f5f5f5;border-radius:8px">
+          <p style="margin:0 0 8px"><strong>Email:</strong> ${safeEmail}</p>
+          <p style="margin:0"><strong>Temporary password:</strong> ${safePassword}</p>
+        </div>
+        <p><a href="${loginUrl}" style="display:inline-block;padding:12px 20px;background:#cda631;color:#fff;text-decoration:none;border-radius:6px">Sign in</a></p>
+        <p style="margin-top:24px;font-size:13px;color:#666">Please change your password after signing in if password management is available on your account.</p>
+      </div>`,
+    }),
+  });
+
+  if (!response.ok) {
+    const providerError = await response.text().catch(() => '');
+    console.error('Credentials email provider error:', providerError);
+    throw new Error('EMAIL_SEND_FAILED');
+  }
+}
