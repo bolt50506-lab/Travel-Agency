@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Mail, Lock, Loader2, AlertCircle, Eye, EyeOff, ShieldCheck } from 'lucide-react';
@@ -13,6 +14,11 @@ import { toast } from 'sonner';
 
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const nextPath = (() => {
+    const value = searchParams.get('next');
+    return value && value.startsWith('/') && !value.startsWith('//') ? value : '/';
+  })();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -41,7 +47,7 @@ export default function LoginPage() {
       // The API enforces portal === "customer", so staff accounts cannot
       // enter through this login. Customer data is resolved from the
       // authenticated user's ID on protected customer endpoints.
-      router.push('/');
+      router.push(nextPath);
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong');
@@ -158,7 +164,7 @@ export default function LoginPage() {
 
             <p className="mt-5 text-center text-sm text-muted-foreground">
               Don&apos;t have an account?{' '}
-              <Link href="/register" className="font-semibold text-[#a77f12] hover:underline">
+              <Link href={`/register?next=${encodeURIComponent(nextPath)}`} className="font-semibold text-[#a77f12] hover:underline">
                 Sign up
               </Link>
             </p>
