@@ -55,12 +55,12 @@ export default function LoginPage() {
       <div
         aria-hidden="true"
         className="absolute inset-0 bg-cover bg-center"
-        style={{ backgroundImage: "url('/brand/login-island.svg')" }}
+        style={{ backgroundImage: "url('https://images.unsplash.com/photo-1501785888041-af3ef285b470?auto=format&fit=crop&w=2400&q=90')" }}
       />
-      <div aria-hidden="true" className="absolute inset-0 bg-[#062f43]/35" />
+      <div aria-hidden="true" className="absolute inset-0 bg-[#062f43]/20" />
       <div
         aria-hidden="true"
-        className="absolute inset-0 bg-gradient-to-b from-[#062f43]/15 via-transparent to-[#062f43]/70"
+        className="absolute inset-0 bg-gradient-to-b from-black/10 via-black/5 to-[#062f43]/75"
       />
 
       <div className="relative z-10 flex min-h-[calc(100vh-4rem)] items-center justify-center px-4 py-10 sm:px-6">
