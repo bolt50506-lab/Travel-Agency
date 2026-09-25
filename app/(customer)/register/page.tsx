@@ -39,8 +39,8 @@ export default function RegisterPage() {
         throw new Error(data.error || 'Registration failed');
       }
 
-      toast.success('Account created! Welcome to Voyago.');
-      router.push('/');
+      toast.success('Account created. Check your email to verify your account.');
+      router.push(`/verify-email?email=${encodeURIComponent(form.email.trim().toLowerCase())}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong');
     } finally {
