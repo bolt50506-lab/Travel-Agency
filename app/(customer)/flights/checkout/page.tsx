@@ -499,31 +499,27 @@ export default function FlightCheckoutPage() {
                   <span>{new Date(departDate).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}</span>
                 </div>
                 <Separator />
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Base Fare ({totalPassengers} pax)</span>
-                  <span>{formatPrice(offer.basePrice.amount)}</span>
-                </div>
+                {(() => {
+                  // Customer-facing base fare is inclusive of the agency markup.
+                  // Keep the internal supplier/base cost out of the customer UI.
+                  const customerBaseFare = Math.max(
+                    0,
+                    Math.round(
+                      (Number(offer.totalPrice.amount) - Number(offer.taxesAndFees.amount)) * 100
+                    ) / 100
+                  );
+
+                  return (
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Base Fare ({totalPassengers} pax)</span>
+                      <span>{formatPrice(customerBaseFare, offer.totalPrice.currency)}</span>
+                    </div>
+                  );
+                })()}
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Taxes & Fees</span>
-                  <span>{formatPrice(offer.taxesAndFees.amount)}</span>
+                  <span>{formatPrice(offer.taxesAndFees.amount, offer.totalPrice.currency)}</span>
                 </div>
-                {(() => {
-                  // The customer total includes the agency pricing adjustment
-                  // (markup/service fee, less any discount). Show it explicitly
-                  // so the checkout breakdown always reconciles to the total.
-                  const pricingAdjustment = Math.round(
-                    (Number(offer.totalPrice.amount) -
-                      Number(offer.basePrice.amount) -
-                      Number(offer.taxesAndFees.amount)) * 100
-                  ) / 100;
-
-                  return pricingAdjustment !== 0 ? (
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Agency Service Fee</span>
-                      <span>{formatPrice(pricingAdjustment, offer.totalPrice.currency)}</span>
-                    </div>
-                  ) : null;
-                })()}
                 <Separator />
                 <div className="flex justify-between font-bold">
                   <span>Total</span>
