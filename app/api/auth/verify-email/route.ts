@@ -35,7 +35,7 @@ export async function GET(req: NextRequest) {
 
     await supabaseAdmin.from('profiles').update({ email_verified_at: new Date().toISOString() }).eq('id', record.user_id);
     await supabaseAdmin.from('email_verification_tokens').update({ used_at: new Date().toISOString() }).eq('id', record.id);
-    await supabaseAdmin.from('email_verification_tokens').delete().eq('user_id', record.user_id).eq('used_at', null);
+    await supabaseAdmin.from('email_verification_tokens').delete().eq('user_id', record.user_id).is('used_at', null);
 
     return NextResponse.redirect(`${appUrl}/verify-email?status=success`);
   } catch (error) {
