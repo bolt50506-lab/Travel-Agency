@@ -48,6 +48,7 @@ async function main() {
 
   let serviceKey = current.SUPABASE_SERVICE_ROLE_KEY;
   let duffelKey = current.DUFFEL_API_KEY;
+  let letsfgKey = current.LETSFG_API_KEY;
   let emailApiKey = current.EMAIL_API_KEY;
   let emailFrom = current.EMAIL_FROM;
 
@@ -71,6 +72,16 @@ async function main() {
 
   if (!duffelKey) {
     console.error('A Duffel TEST API key is required for flight search.');
+    process.exit(1);
+  }
+
+  if (!letsfgKey || /^(replace-with|YOUR_|undefined|null)$/i.test(letsfgKey)) {
+    console.log('');
+    letsfgKey = await prompt('Paste the LetsFG API key (stored only in .env.local): ');
+  }
+
+  if (!letsfgKey) {
+    console.error('A LetsFG API key is required for multi-provider flight search.');
     process.exit(1);
   }
 
@@ -108,9 +119,12 @@ async function main() {
     'POSTGREST_JWT_SECRET=',
     'LOCAL_AUTH_SECRET=' + quote(localAuthSecret),
     'NEXT_PUBLIC_APP_URL=' + quote(current.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'),
-    'FLIGHT_PROVIDER="duffel"',
+    'FLIGHT_PROVIDER="multi"',
+    'FLIGHT_PROVIDERS="duffel,letsfg"',
     'ALLOW_MOCK_PROVIDERS=false',
     'DUFFEL_API_KEY=' + quote(duffelKey),
+    'LETSFG_API_KEY=' + quote(letsfgKey),
+    'LETSFG_MODE="sandbox"',
     'HOTEL_PROVIDER=' + quote(current.HOTEL_PROVIDER || 'mock'),
     'PAYMENT_PROVIDER=' + quote(current.PAYMENT_PROVIDER || 'manual'),
     'PAYMENT_CURRENCY=' + quote(current.PAYMENT_CURRENCY || 'PKR'),
