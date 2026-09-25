@@ -29,7 +29,9 @@ export default function FlightCheckoutPage() {
   const [contactPhone, setContactPhone] = useState('');
   const [bookingResult, setBookingResult] = useState<{ reference: string; status: string } | null>(null);
   const [paymentProcessing, setPaymentProcessing] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState<'raast' | 'jazzcash' | 'easypaisa' | 'bank_transfer'>('raast');
+  const [paymentMethod, setPaymentMethod] = useState<'wallet' | 'raast' | 'jazzcash' | 'easypaisa' | 'bank_transfer'>('raast');
+  const [actorRole, setActorRole] = useState<string | null>(null);
+  const [walletBalance, setWalletBalance] = useState<number | null>(null);
   const [paymentReference, setPaymentReference] = useState('');
 
   const offerId = searchParams.get('offerId') || '';
@@ -51,6 +53,14 @@ export default function FlightCheckoutPage() {
           const next = window.location.pathname + window.location.search;
           window.location.href = `/register?next=${encodeURIComponent(next)}`;
           return false;
+        }
+        setActorRole(session.role);
+        if (session.role === 'customer') {
+          const walletRes = await fetch('/api/wallet', { cache: 'no-store' });
+          if (walletRes.ok) {
+            const walletData = await walletRes.json();
+            setWalletBalance(Number(walletData.wallet?.balance || 0));
+          }
         }
         return true;
       } catch {
@@ -425,6 +435,11 @@ export default function FlightCheckoutPage() {
                     <Select value={paymentMethod} onValueChange={(v) => setPaymentMethod(v as typeof paymentMethod)}>
                       <SelectTrigger id="flightPaymentMethod"><SelectValue /></SelectTrigger>
                       <SelectContent>
+                        {actorRole === 'customer' && (
+                          <SelectItem value="wallet" disabled={walletBalance === null || walletBalance < Number(offer.totalPrice.amount)}>
+                            Wallet{walletBalance !== null ? ` — PKR ${walletBalance.toLocaleString('en-PK')}` : ''}
+                          </SelectItem>
+                        )}
                         <SelectItem value="raast">Raast</SelectItem>
                         <SelectItem value="jazzcash">JazzCash</SelectItem>
                         <SelectItem value="easypaisa">Easypaisa</SelectItem>
@@ -437,7 +452,17 @@ export default function FlightCheckoutPage() {
                     <Input id="flightPaymentReference" value={paymentReference} onChange={(e) => setPaymentReference(e.target.value)} placeholder="Enter transaction/reference number after payment" />
                   </div>
                 </div>
-                <p className="mt-3 text-xs text-muted-foreground">Payment is recorded in PKR and verified by the travel agency before ticketing or voucher issuance.</p>
+                {actorRole === 'customer' && walletBalance !== null && (
+                  <div className={cn('mt-3 rounded-lg border p-3 text-xs', walletBalance >= Number(offer.totalPrice.amount) ? 'border-primary/30 bg-primary/5' : 'border-amber-400/40 bg-amber-50/50')}>
+                    <span className="font-semibold">Wallet balance:</span> PKR {walletBalance.toLocaleString('en-PK')}
+                    {walletBalance < Number(offer.totalPrice.amount) && ' — insufficient for this booking.'}
+                  </div>
+                )}
+                <p className="mt-3 text-xs text-muted-foreground">
+                  {paymentMethod === 'wallet'
+                    ? 'The booking amount will be deducted immediately from your verified wallet balance.'
+                    : 'Payment is recorded in PKR and verified by the travel agency before ticketing.'}
+                </p>
               </Card>
 
               <div className="flex items-center gap-2 text-xs text-muted-foreground">
@@ -453,7 +478,7 @@ export default function FlightCheckoutPage() {
                   </>
                 ) : (
                   <>
-                    Pay {formatPrice(offer.totalPrice.amount, offer.totalPrice.currency)}
+                    {paymentMethod === 'wallet' ? 'Pay from Wallet' : `Pay ${formatPrice(offer.totalPrice.amount, offer.totalPrice.currency)}`}
                   </>
                 )}
               </Button>
