@@ -51,12 +51,17 @@ export default function RegisterPage() {
 
   return (
     <main className="relative min-h-[calc(100vh-4rem)] overflow-hidden bg-[#062f43]">
-      <div
-        aria-hidden="true"
-        className="absolute inset-0 bg-cover bg-center opacity-30"
-        style={{ backgroundImage: "url('/brand/travel-background.svg')" }}
-      />
-      <div aria-hidden="true" className="absolute inset-0 bg-[#062f43]/35" />
+      <div aria-hidden="true" className="absolute inset-0 overflow-hidden">
+        <iframe
+          title="Destino Travels scenic travel background"
+          className="pointer-events-none absolute left-1/2 top-1/2 h-[125vh] w-[222vh] min-h-full min-w-full -translate-x-1/2 -translate-y-1/2 scale-[1.08] border-0 opacity-35"
+          src="https://www.youtube-nocookie.com/embed/YfxT_OMrw8E?autoplay=1&mute=1&controls=0&loop=1&playlist=YfxT_OMrw8E&playsinline=1&rel=0&modestbranding=1"
+          allow="autoplay; fullscreen"
+          aria-hidden="true"
+          tabIndex={-1}
+        />
+      </div>
+      <div aria-hidden="true" className="absolute inset-0 bg-[#062f43]/40" />
       <div
         aria-hidden="true"
         className="absolute inset-0 bg-gradient-to-b from-[#062f43]/35 via-[#062f43]/20 to-[#062f43]/80"
