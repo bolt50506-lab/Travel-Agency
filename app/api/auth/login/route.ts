@@ -58,10 +58,6 @@ export async function POST(req: NextRequest) {
       return errorResponse('This account has an invalid access role. Please contact the agency.', 'AUTH_INVALID_ROLE', 403);
     }
 
-    if (profile.role === 'customer' && !profile.email_verified_at) {
-      return errorResponse('Please verify your email address before logging in. Check your inbox for the verification link.', 'AUTH_EMAIL_NOT_VERIFIED', 403);
-    }
-
     await supabaseAdmin.from('local_users').update({ last_login_at: new Date().toISOString() }).eq('id', account.id);
 
     const token = createSessionToken({ id: account.id, email: account.email, role: profile.role });
