@@ -83,9 +83,19 @@ export default function LoginPage() {
             </p>
 
             {error && (
-              <div className="mb-4 flex items-start gap-2 rounded-lg border border-destructive/50 bg-destructive/5 p-3">
-                <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
-                <p className="text-sm text-destructive">{error}</p>
+              <div className="mb-4 rounded-lg border border-destructive/50 bg-destructive/5 p-3">
+                <div className="flex items-start gap-2">
+                  <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
+                  <p className="text-sm text-destructive">{error}</p>
+                </div>
+                {error.toLowerCase().includes('verify your email') && (
+                  <Link
+                    href={`/verify-email?email=${encodeURIComponent(email.trim().toLowerCase())}`}
+                    className="mt-2 inline-block pl-6 text-sm font-semibold text-primary hover:underline"
+                  >
+                    Verify or resend email
+                  </Link>
+                )}
               </div>
             )}
 
