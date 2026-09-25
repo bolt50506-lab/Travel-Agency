@@ -3,11 +3,12 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Globe, Mail, Lock, User, Phone, Loader2, AlertCircle } from 'lucide-react';
+import { Mail, Lock, User, Phone, Loader2, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card } from '@/components/ui/card';
+import { BrandLogo } from '@/components/brand/logo';
 import { toast } from 'sonner';
 
 export default function RegisterPage() {
@@ -51,13 +52,10 @@ export default function RegisterPage() {
   return (
     <div className="container-page py-12">
       <div className="mx-auto max-w-md">
-        <div className="mb-6 text-center">
-          <Link href="/" className="inline-flex items-center gap-2">
-            <div className="flex h-10 w-10 items-center justify-center rounded-md bg-primary">
-              <Globe className="h-6 w-6 text-primary-foreground" />
-            </div>
-            <span className="text-2xl font-bold tracking-tight">Destino Travels</span>
-          </Link>
+        <div className="mb-6 flex justify-center">
+          <div className="rounded-2xl bg-white px-5 py-3 shadow-lg ring-1 ring-border">
+            <BrandLogo />
+          </div>
         </div>
 
         <Card className="p-6">
