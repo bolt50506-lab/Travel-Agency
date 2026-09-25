@@ -85,7 +85,7 @@ export default function BookingDetailPage() {
     );
   }
 
-  const visibleDocs = booking.documents.filter((d) => d.customerVisible);
+  const visibleDocs = (booking.documents || []).filter((d) => d.customerVisible);
   const isProcessing = !['TICKETED', 'VOUCHER_ISSUED', 'COMPLETED', 'CANCELLED', 'REFUNDED', 'FAILED'].includes(booking.status);
   const isTicketed = booking.status === 'TICKETED' || booking.status === 'VOUCHER_ISSUED' || booking.status === 'COMPLETED';
 
@@ -143,7 +143,7 @@ export default function BookingDetailPage() {
           <h2 className="text-lg font-semibold mb-4">Travel Details</h2>
           {booking.type === 'flight' && booking.flightDetails && (
             <div className="space-y-3">
-              {booking.flightDetails.segments.map((seg, i) => (
+              {(booking.flightDetails.segments || []).map((seg, i) => (
                 <div key={i} className="flex items-center gap-3 text-sm">
                   <Plane className="h-4 w-4 text-muted-foreground" />
                   <span className="font-medium">{seg.origin.code}</span>
@@ -155,9 +155,9 @@ export default function BookingDetailPage() {
               <Separator />
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <UsersIcon className="h-4 w-4" />
-                {booking.flightDetails.passengers.length} passenger(s):
+                {(booking.flightDetails.passengers || []).length} passenger(s):
                 <span className="text-foreground">
-                  {booking.flightDetails.passengers.map((p) => `${p.firstName} ${p.lastName}`).join(', ')}
+                  {(booking.flightDetails.passengers || []).map((p) => `${p.firstName} ${p.lastName}`).join(', ')}
                 </span>
               </div>
               {booking.fulfillment?.pnr && (
@@ -181,9 +181,9 @@ export default function BookingDetailPage() {
               </div>
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <UsersIcon className="h-4 w-4" />
-                {booking.hotelDetails.guests.length} guest(s):
+                {(booking.hotelDetails.guests || []).length} guest(s):
                 <span className="text-foreground">
-                  {booking.hotelDetails.guests.map((g) => `${g.firstName} ${g.lastName}`).join(', ')}
+                  {(booking.hotelDetails.guests || []).map((g) => `${g.firstName} ${g.lastName}`).join(', ')}
                 </span>
               </div>
               {booking.fulfillment?.hotelConfirmationNumber && (
@@ -266,10 +266,10 @@ export default function BookingDetailPage() {
         <Card className="p-5">
           <h2 className="text-lg font-semibold mb-4">Booking Timeline</h2>
           <div className="space-y-3">
-            {booking.timeline.map((evt, i) => (
+            {(booking.timeline || []).map((evt, i) => (
               <div key={evt.id} className="flex items-start gap-3">
                 <div className="flex flex-col items-center">
-                  <div className={`h-3 w-3 rounded-full ${i === booking.timeline.length - 1 ? 'bg-primary' : 'bg-muted-foreground/30'}`} />
+                  <div className={`h-3 w-3 rounded-full ${i === (booking.timeline || []).length - 1 ? 'bg-primary' : 'bg-muted-foreground/30'}`} />
                   {i < booking.timeline.length - 1 && <div className="h-6 w-px bg-border" />}
                 </div>
                 <div className="pb-1">
