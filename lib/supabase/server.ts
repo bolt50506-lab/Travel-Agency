@@ -288,9 +288,55 @@ class QueryBuilder {
   }
 }
 
+async function callRpc(functionName: string, args: Record<string, unknown>) {
+  if (!postgrestUrl) {
+    throw new Error(
+      'Supabase is not configured. Set NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in .env.local.'
+    );
+  }
+
+  const response = await fetch(
+    `${postgrestUrl.replace(/\\/$/, '')}/rpc/${encodeURIComponent(functionName)}`,
+    {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${serviceKey}`,
+        apikey: serviceKey,
+        Accept: 'application/json',
+        'Content-Type': 'application/json',
+        'Content-Profile': 'public',
+      },
+      body: JSON.stringify(args),
+    }
+  );
+
+  const text = await response.text();
+  const parsed = parseResponseBody(text);
+  if (!response.ok) {
+    return {
+      data: null,
+      error: makeError(parsed, response.status, response.statusText),
+      count: null,
+      status: response.status,
+      statusText: response.statusText,
+    };
+  }
+
+  return {
+    data: parsed,
+    error: null,
+    count: null,
+    status: response.status,
+    statusText: response.statusText,
+  };
+}
+
 export const supabaseAdmin = {
   from(table: string) {
     return new QueryBuilder(table);
+  },
+  rpc(functionName: string, args: Record<string, unknown>) {
+    return callRpc(functionName, args);
   },
 };
 
