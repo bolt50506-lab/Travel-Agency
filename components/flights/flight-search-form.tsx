@@ -1,8 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Search, Users } from 'lucide-react';
+import { Search, Users, ChevronsUpDown, MapPin } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -11,6 +11,40 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import type { TripType, CabinClass } from '@/types/flight';
 import { cn } from '@/lib/utils';
+
+const AIRPORTS = [
+  ['ISB', 'Islamabad International Airport', 'Islamabad, Pakistan'],
+  ['KHI', 'Jinnah International Airport', 'Karachi, Pakistan'],
+  ['LHE', 'Allama Iqbal International Airport', 'Lahore, Pakistan'],
+  ['PEW', 'Bacha Khan International Airport', 'Peshawar, Pakistan'],
+  ['MUX', 'Multan International Airport', 'Multan, Pakistan'],
+  ['SKT', 'Sialkot International Airport', 'Sialkot, Pakistan'],
+  ['DXB', 'Dubai International Airport', 'Dubai, UAE'],
+  ['AUH', 'Zayed International Airport', 'Abu Dhabi, UAE'],
+  ['SHJ', 'Sharjah International Airport', 'Sharjah, UAE'],
+  ['DOH', 'Hamad International Airport', 'Doha, Qatar'],
+  ['RUH', 'King Khalid International Airport', 'Riyadh, Saudi Arabia'],
+  ['JED', 'King Abdulaziz International Airport', 'Jeddah, Saudi Arabia'],
+  ['DMM', 'King Fahd International Airport', 'Dammam, Saudi Arabia'],
+  ['MED', 'Prince Mohammad bin Abdulaziz International Airport', 'Medina, Saudi Arabia'],
+  ['MCT', 'Muscat International Airport', 'Muscat, Oman'],
+  ['BAH', 'Bahrain International Airport', 'Manama, Bahrain'],
+  ['KWI', 'Kuwait International Airport', 'Kuwait City, Kuwait'],
+  ['IST', 'Istanbul Airport', 'Istanbul, Türkiye'],
+  ['LHR', 'Heathrow Airport', 'London, UK'],
+  ['LGW', 'Gatwick Airport', 'London, UK'],
+  ['CDG', 'Charles de Gaulle Airport', 'Paris, France'],
+  ['FRA', 'Frankfurt Airport', 'Frankfurt, Germany'],
+  ['JFK', 'John F. Kennedy International Airport', 'New York, USA'],
+  ['EWR', 'Newark Liberty International Airport', 'Newark, USA'],
+  ['ORD', 'O’Hare International Airport', 'Chicago, USA'],
+  ['LAX', 'Los Angeles International Airport', 'Los Angeles, USA'],
+  ['YYZ', 'Toronto Pearson International Airport', 'Toronto, Canada'],
+  ['BKK', 'Suvarnabhumi Airport', 'Bangkok, Thailand'],
+  ['KUL', 'Kuala Lumpur International Airport', 'Kuala Lumpur, Malaysia'],
+  ['SIN', 'Singapore Changi Airport', 'Singapore'],
+  ['SYD', 'Sydney Airport', 'Sydney, Australia'],
+] as const;
 
 export function FlightSearchForm() {
   const router = useRouter();
@@ -24,6 +58,7 @@ export function FlightSearchForm() {
   const [infants, setInfants] = useState(0);
   const [cabinClass, setCabinClass] = useState<CabinClass>('economy');
   const [passengerOpen, setPassengerOpen] = useState(false);
+  const [airportOpen, setAirportOpen] = useState<'origin' | 'destination' | null>(null);
   const [error, setError] = useState('');
 
   const totalPassengers = adults + children + infants;
@@ -83,35 +118,21 @@ export function FlightSearchForm() {
 
         <div className="grid gap-4">
           <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-1.5">
-              <Label htmlFor="origin">From</Label>
-              <Input
-                id="origin"
-                value={origin}
-                onChange={(e) => {
-                  setOrigin(e.target.value.replace(/[^a-zA-Z]/g, '').slice(0, 3).toUpperCase());
-                  setError('');
-                }}
-                placeholder="IATA code, e.g. ISB"
-                maxLength={3}
-                autoComplete="off"
-              />
-            </div>
+            <AirportSelector
+              label="From"
+              value={origin}
+              open={airportOpen === 'origin'}
+              onOpenChange={(open) => setAirportOpen(open ? 'origin' : null)}
+              onChange={(value) => { setOrigin(value); setError(''); }}
+            />
 
-            <div className="space-y-1.5">
-              <Label htmlFor="destination">To</Label>
-              <Input
-                id="destination"
-                value={destination}
-                onChange={(e) => {
-                  setDestination(e.target.value.replace(/[^a-zA-Z]/g, '').slice(0, 3).toUpperCase());
-                  setError('');
-                }}
-                placeholder="IATA code, e.g. DXB"
-                maxLength={3}
-                autoComplete="off"
-              />
-            </div>
+            <AirportSelector
+              label="To"
+              value={destination}
+              open={airportOpen === 'destination'}
+              onOpenChange={(open) => setAirportOpen(open ? 'destination' : null)}
+              onChange={(value) => { setDestination(value); setError(''); }}
+            />
           </div>
 
           <p className="text-xs text-muted-foreground">
@@ -188,6 +209,117 @@ export function FlightSearchForm() {
           </Button>
         </div>
       </Tabs>
+    </div>
+  );
+}
+
+
+function AirportSelector({
+  label,
+  value,
+  open,
+  onOpenChange,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onChange: (value: string) => void;
+}) {
+  const [query, setQuery] = useState('');
+  const filteredAirports = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return AIRPORTS;
+    return AIRPORTS.filter(([code, name, city]) =>
+      code.toLowerCase().includes(q) ||
+      name.toLowerCase().includes(q) ||
+      city.toLowerCase().includes(q)
+    );
+  }, [query]);
+
+  const selected = AIRPORTS.find(([code]) => code === value);
+
+  return (
+    <div className="space-y-1.5">
+      <Label>{label}</Label>
+      <Popover
+        open={open}
+        onOpenChange={(next) => {
+          onOpenChange(next);
+          if (!next) setQuery('');
+        }}
+      >
+        <PopoverTrigger asChild>
+          <Button
+            type="button"
+            variant="outline"
+            role="combobox"
+            aria-expanded={open}
+            className="h-10 w-full justify-between px-3 font-normal"
+          >
+            <span className="flex min-w-0 items-center gap-2 text-left">
+              <MapPin className="h-4 w-4 shrink-0 text-muted-foreground" />
+              {selected ? (
+                <span className="min-w-0 truncate">
+                  <span className="font-semibold">{selected[0]}</span>
+                  <span className="text-muted-foreground"> · {selected[2]}</span>
+                </span>
+              ) : (
+                <span className="text-muted-foreground">Search airport or city</span>
+              )}
+            </span>
+            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-[min(420px,calc(100vw-2rem))] p-2" align="start">
+          <div className="relative mb-2">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              autoFocus
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search city, airport or IATA code..."
+              className="pl-9"
+            />
+          </div>
+          <div className="max-h-64 overflow-y-auto">
+            {filteredAirports.length ? (
+              filteredAirports.map(([code, name, city]) => (
+                <button
+                  key={code}
+                  type="button"
+                  className="flex w-full items-center justify-between rounded-md px-3 py-2 text-left hover:bg-muted"
+                  onClick={() => {
+                    onChange(code);
+                    onOpenChange(false);
+                    setQuery('');
+                  }}
+                >
+                  <span className="min-w-0">
+                    <span className="block text-sm font-semibold">{city}</span>
+                    <span className="block truncate text-xs text-muted-foreground">{name}</span>
+                  </span>
+                  <span className="ml-3 shrink-0 text-sm font-semibold">{code}</span>
+                </button>
+              ))
+            ) : (
+              <p className="px-3 py-6 text-center text-sm text-muted-foreground">
+                No airports found. You can still enter a 3-letter IATA code below.
+              </p>
+            )}
+          </div>
+          <div className="mt-2 border-t pt-2">
+            <Input
+              value={value}
+              onChange={(e) => onChange(e.target.value.replace(/[^a-zA-Z]/g, '').slice(0, 3).toUpperCase())}
+              placeholder="Or enter IATA code"
+              maxLength={3}
+              autoComplete="off"
+            />
+          </div>
+        </PopoverContent>
+      </Popover>
     </div>
   );
 }
