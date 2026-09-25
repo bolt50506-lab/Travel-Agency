@@ -1,4 +1,4 @@
-# Voyago — Travel Booking Platform
+# Destino Travels — Travel Booking Platform
 
 A production-grade travel booking portal for flights and hotels. Built with Next.js, TypeScript, and a provider-based architecture that supports mock providers initially and real supplier APIs later.
 
@@ -105,8 +105,8 @@ This starts the web application on port 3000 and a PostgreSQL database on port 5
 ### Build the Docker image only
 
 ```bash
-docker build -t voyago .
-docker run -p 3000:3000 --env-file .env voyago
+docker build -t destino-travels .
+docker run -p 3000:3000 --env-file .env destino-travels
 ```
 
 ## Demo Accounts
