@@ -4,35 +4,10 @@ import crypto from 'crypto';
 import { NextRequest } from 'next/server';
 import { successResponse, errorResponse } from '@/lib/utils/api';
 import { supabaseAdmin } from '@/lib/supabase/server';
+import { sendCustomerVerificationEmail } from '@/lib/services/email-service';
 
 function hashToken(token: string) {
   return crypto.createHash('sha256').update(token).digest('hex');
-}
-
-async function sendVerificationEmail(email: string, fullName: string, token: string) {
-  const apiKey = process.env.EMAIL_API_KEY || process.env.RESEND_API_KEY;
-  const from = process.env.EMAIL_FROM || process.env.RESEND_FROM_EMAIL;
-  const appUrl = (process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000').replace(/\/$/, '');
-  if (!apiKey || !from) throw new Error('EMAIL_NOT_CONFIGURED');
-  const verificationUrl = `${appUrl}/verify-email?token=${encodeURIComponent(token)}`;
-
-  const response = await fetch('https://api.resend.com/emails', {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      from,
-      to: [email],
-      subject: 'Verify your Destino Travels email',
-      html: `<div style="font-family:Arial,sans-serif;max-width:600px;margin:auto;padding:32px">
-        <h2>Verify your Destino Travels account</h2>
-        <p>Hello ${fullName || 'there'},</p>
-        <p>Click the button below to verify your email address.</p>
-        <p><a href="${verificationUrl}" style="display:inline-block;padding:12px 20px;background:#cda631;color:#fff;text-decoration:none;border-radius:6px">Verify Email</a></p>
-        <p>This link expires in 24 hours.</p>
-      </div>`,
-    }),
-  });
-  if (!response.ok) throw new Error('EMAIL_SEND_FAILED');
 }
 
 export async function POST(req: NextRequest) {
@@ -62,7 +37,7 @@ export async function POST(req: NextRequest) {
     if (error) throw error;
 
     try {
-      await sendVerificationEmail(profile.email, profile.full_name || '', rawToken);
+      await sendCustomerVerificationEmail({ email: profile.email, fullName: profile.full_name || '', token: rawToken });
     } catch (emailError) {
       await supabaseAdmin.from('email_verification_tokens').delete().eq('user_id', profile.id);
       if (emailError instanceof Error && emailError.message === 'EMAIL_NOT_CONFIGURED') {
