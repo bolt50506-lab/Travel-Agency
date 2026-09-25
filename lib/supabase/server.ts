@@ -187,7 +187,7 @@ class QueryBuilder {
     }
 
     const url = new URL(
-      `${postgrestUrl.replace(/\/$/, '')}/${this.table}`
+`${postgrestUrl.replace(/\/$/, '')}/rpc/${encodeURIComponent(functionName)}`,
     );
 
     if (this.method === 'GET') {
