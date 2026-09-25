@@ -119,16 +119,8 @@ export default function HotelResultsPage() {
 
     try {
       const session = await fetch('/api/auth/session', { cache: 'no-store' }).then((res) => res.json());
-      if (session.role === 'customer') {
+      if (['customer', 'agent', 'admin'].includes(session.role)) {
         window.location.href = checkoutPath;
-        return;
-      }
-      if (session.role === 'admin') {
-        window.location.href = '/admin';
-        return;
-      }
-      if (session.role === 'agent') {
-        window.location.href = '/agent';
         return;
       }
     } catch {
