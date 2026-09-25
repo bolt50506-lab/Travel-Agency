@@ -56,7 +56,7 @@ export default function RegisterPage() {
             <div className="flex h-10 w-10 items-center justify-center rounded-md bg-primary">
               <Globe className="h-6 w-6 text-primary-foreground" />
             </div>
-            <span className="text-2xl font-bold tracking-tight">Voyago</span>
+            <span className="text-2xl font-bold tracking-tight">Destino Travels</span>
           </Link>
         </div>
 
