@@ -45,6 +45,8 @@ export const flightSearchSchema = z.object({
 export const flightRevalidateSchema = z.object({
   offerId: z.string().min(1),
   searchId: z.string().min(1),
+  pricingToken: z.string().min(1).optional(),
+  selectedOffer: z.any().optional(),
 });
 
 export const flightBookSchema = z.object({
