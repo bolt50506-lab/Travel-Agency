@@ -46,7 +46,7 @@ export default function WalletPage() {
   async function load() {
     setLoading(true);
     try {
-      const res = await fetch('/api/wallet', { cache: 'no-store' });
+      const res = await fetch('/api/wallet', { cache: 'no-store', credentials: 'include' });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Unable to load wallet');
       setWallet(data.wallet || { balance: 0, currency: 'PKR' });
@@ -68,6 +68,7 @@ export default function WalletPage() {
     try {
       const res = await fetch('/api/wallet', {
         method: 'POST',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ amount, method, paymentReference: reference, customerNote: note }),
       });
@@ -87,7 +88,7 @@ export default function WalletPage() {
 
   async function cancelTopup(id: string) {
     try {
-      const res = await fetch('/api/wallet', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ topupId: id }) });
+      const res = await fetch('/api/wallet', { method: 'DELETE', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ topupId: id }) });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Unable to cancel');
       toast.success('Top-up cancelled');
