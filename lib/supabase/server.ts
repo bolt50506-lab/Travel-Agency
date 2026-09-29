@@ -119,6 +119,11 @@ class QueryBuilder {
     return this;
   }
 
+  or(filters: string) {
+    this.filters.push(`or=${encodeValue(filters)}`);
+    return this;
+  }
+
   is(column: string, value: null | boolean) {
     const operator = value === null ? 'is.null' : `is.${value}`;
     this.filters.push(
