@@ -88,38 +88,70 @@ function getApiKey() {
   return key;
 }
 
-async function duffelRequest<T>(path: string, init: RequestInit = {}): Promise<T> {
-  const response = await fetch(`${DUFFEL_API_URL}${path}`, {
-    ...init,
-    headers: {
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
-      'Duffel-Version': 'v2',
-      Authorization: `Bearer ${getApiKey()}`,
-      ...(init.headers || {}),
-    },
-    cache: 'no-store',
-  });
+const DUFFEL_REQUEST_TIMEOUT_MS = Number(process.env.DUFFEL_REQUEST_TIMEOUT_MS || 20000);
+const DUFFEL_NETWORK_RETRIES = Math.max(0, Number(process.env.DUFFEL_NETWORK_RETRIES || 2));
 
-  const body = await response.text();
-  let parsed: any = null;
-  try {
-    parsed = body ? JSON.parse(body) : null;
-  } catch {
-    parsed = null;
-  }
-
-  if (!response.ok) {
-    const message =
-      parsed?.errors?.[0]?.message ||
-      parsed?.error?.message ||
-      `Duffel API request failed with HTTP ${response.status}`;
-    throw new Error(`DUFFEL_${response.status}: ${message}`);
-  }
-
-  return parsed as T;
+function isTransientNetworkError(error: unknown) {
+  const message = error instanceof Error ? error.message : String(error);
+  const cause = error instanceof Error ? (error as Error & { cause?: unknown }).cause : undefined;
+  const causeMessage = cause instanceof Error ? cause.message : String(cause || '');
+  return /ETIMEDOUT|ECONNRESET|ECONNREFUSED|EAI_AGAIN|fetch failed|network/i.test(
+    `${message} ${causeMessage}`
+  );
 }
 
+async function duffelRequest<T>(path: string, init: RequestInit = {}): Promise<T> {
+  let lastError: unknown;
+
+  for (let attempt = 0; attempt <= DUFFEL_NETWORK_RETRIES; attempt += 1) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), DUFFEL_REQUEST_TIMEOUT_MS);
+
+    try {
+      const response = await fetch(`${DUFFEL_API_URL}${path}`, {
+        ...init,
+        signal: controller.signal,
+        headers: {
+          Accept: 'application/json',
+          'Content-Type': 'application/json',
+          'Duffel-Version': 'v2',
+          Authorization: `Bearer ${getApiKey()}`,
+          ...(init.headers || {}),
+        },
+        cache: 'no-store',
+      });
+
+      const body = await response.text();
+      let parsed: any = null;
+      try {
+        parsed = body ? JSON.parse(body) : null;
+      } catch {
+        parsed = null;
+      }
+
+      if (!response.ok) {
+        const message =
+          parsed?.errors?.[0]?.message ||
+          parsed?.error?.message ||
+          `Duffel API request failed with HTTP ${response.status}`;
+        throw new Error(`DUFFEL_${response.status}: ${message}`);
+      }
+
+      return parsed as T;
+    } catch (error) {
+      lastError = error;
+      if (!isTransientNetworkError(error) || attempt >= DUFFEL_NETWORK_RETRIES) {
+        throw error;
+      }
+
+      await new Promise((resolve) => setTimeout(resolve, 500 * (attempt + 1)));
+    } finally {
+      clearTimeout(timeout);
+    }
+  }
+
+  throw lastError instanceof Error ? lastError : new Error('DUFFEL_REQUEST_FAILED');
+}
 function parseDuration(value?: string) {
   if (!value) return 0;
   const match = value.match(/^P(?:(\d+)D)?T(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?$/);
@@ -448,4 +480,3 @@ export class DuffelFlightProvider implements IFlightProvider {
       createdAt: order.created_at || new Date().toISOString(),
     };
   }
-}
