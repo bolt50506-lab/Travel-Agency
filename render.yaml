@@ -1,0 +1,44 @@
+services:
+  - type: web
+    name: destino-travels
+    runtime: node
+    plan: free
+    branch: main
+    buildCommand: npm ci && npm run build
+    startCommand: npm start
+    healthCheckPath: /
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NEXT_PUBLIC_SUPABASE_URL
+        value: https://nduynlamswyozeydvbpy.supabase.co
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: LOCAL_AUTH_SECRET
+        generateValue: true
+      - key: NEXT_PUBLIC_APP_URL
+        sync: false
+      - key: FLIGHT_PROVIDER
+        value: multi
+      - key: FLIGHT_PROVIDERS
+        value: duffel,letsfg
+      - key: ALLOW_MOCK_PROVIDERS
+        value: "false"
+      - key: DUFFEL_API_KEY
+        sync: false
+      - key: LETSFG_API_KEY
+        sync: false
+      - key: LETSFG_MODE
+        value: sandbox
+      - key: HOTEL_PROVIDER
+        value: mock
+      - key: PAYMENT_PROVIDER
+        value: manual
+      - key: PAYMENT_CURRENCY
+        value: PKR
+      - key: EMAIL_PROVIDER
+        value: resend
+      - key: EMAIL_FROM
+        sync: false
+      - key: EMAIL_API_KEY
+        sync: false
