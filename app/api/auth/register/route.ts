@@ -16,18 +16,6 @@ function hashPassword(password: string) {
   return `scrypt$${N}$${r}$${p}$${salt}$${hash}`;
 }
 
-function sessionCookie(token: string, secure: boolean) {
-  const attributes = [
-    `voyago_access_token=${encodeURIComponent(token)}`,
-    'Path=/',
-    'HttpOnly',
-    'SameSite=Lax',
-    `Max-Age=${7 * 24 * 60 * 60}`,
-  ];
-  if (secure) attributes.push('Secure');
-  return attributes.join('; ');
-}
-
 export async function POST(req: NextRequest) {
   try {
     const validation = validateBody(registerSchema, await req.json());
@@ -56,13 +44,23 @@ export async function POST(req: NextRequest) {
       throw profileError;
     }
 
-    const { error: customerError } = await supabaseAdmin.from('customers').insert({
+    const { data: customer, error: customerError } = await supabaseAdmin.from('customers').insert({
       user_id: account.id, full_name: fullName, email, phone: phone || null, country: 'PK', nationality: 'Pakistani',
-    });
-    if (customerError) {
+    }).select('id').single();
+    if (customerError || !customer) {
       await supabaseAdmin.from('profiles').delete().eq('id', account.id);
       await supabaseAdmin.from('local_users').delete().eq('id', account.id);
-      throw customerError;
+      throw customerError || new Error('Customer record was not created');
+    }
+
+    const { error: walletError } = await supabaseAdmin.from('customer_wallets').insert({
+      customer_id: customer.id, balance: 0, currency: 'PKR',
+    });
+    if (walletError) {
+      await supabaseAdmin.from('customers').delete().eq('id', customer.id);
+      await supabaseAdmin.from('profiles').delete().eq('id', account.id);
+      await supabaseAdmin.from('local_users').delete().eq('id', account.id);
+      throw walletError;
     }
 
     const token = createSessionToken({ id: account.id, email, role: 'customer' });
@@ -74,7 +72,15 @@ export async function POST(req: NextRequest) {
       redirectTo: '/',
       message: 'Account created successfully. You are now signed in.',
     }, 201);
-    response.headers.set('Set-Cookie', sessionCookie(token, isSecureRequest));
+    response.cookies.set({
+      name: 'voyago_access_token',
+      value: token,
+      httpOnly: true,
+      secure: isSecureRequest,
+      sameSite: 'lax',
+      path: '/',
+      maxAge: 7 * 24 * 60 * 60,
+    });
     response.headers.set('Cache-Control', 'no-store, private');
     return response;
   } catch (err) {
