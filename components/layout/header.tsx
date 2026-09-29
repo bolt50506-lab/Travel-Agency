@@ -65,9 +65,9 @@ export function Header({ customer }: { customer?: CustomerHeader | null }) {
                 <UserRound className="h-4 w-4" />
                 <span className="max-w-[150px] truncate">{customer.name}</span>
               </Link>
-              <Link href="/api/auth/logout" className="inline-flex h-10 items-center justify-center rounded-xl border border-border px-3 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground">
+              <a href="/api/auth/logout" className="inline-flex h-10 items-center justify-center rounded-xl border border-border px-3 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground">
                 Sign out
-              </Link>
+              </a>
             </>
           ) : (
             <>
@@ -104,9 +104,9 @@ export function Header({ customer }: { customer?: CustomerHeader | null }) {
                   <Link href="/profile" onClick={() => setMobileOpen(false)} className="inline-flex h-10 flex-1 items-center justify-center rounded-xl border border-input bg-background px-4 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground">
                     {customer.name}
                   </Link>
-                  <Link href="/api/auth/logout" className="inline-flex h-10 flex-1 items-center justify-center rounded-xl bg-primary px-4 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90">
+                  <a href="/api/auth/logout" className="inline-flex h-10 flex-1 items-center justify-center rounded-xl bg-primary px-4 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90">
                     Sign out
-                  </Link>
+                  </a>
                 </div>
               </>
             ) : (
