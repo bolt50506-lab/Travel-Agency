@@ -1,5 +1,6 @@
 export const dynamic = 'force-dynamic';
 
+import crypto from 'crypto';
 import { NextRequest } from 'next/server';
 import { successResponse, errorResponse } from '@/lib/utils/api';
 import { supabaseAdmin } from '@/lib/supabase/server';
@@ -8,7 +9,8 @@ import { requireAgentRecord } from '@/lib/auth/agent';
 import { calculateAgencyPrice, openPricingSnapshot } from '@/lib/services/pricing-service';
 
 function makeReference() {
-  return `AG-${new Date().getFullYear()}-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
+  const suffix = crypto.randomBytes(5).toString('hex').toUpperCase();
+  return `AG-${new Date().getFullYear()}-${suffix}`;
 }
 
 async function findCustomer(actorId: string, email: string, phone: string, name: string, agentMode: boolean) {
@@ -80,7 +82,7 @@ function customerVisibleDetails(details: any, type: 'flight' | 'hotel') {
   };
 }
 
-function mapBooking(row: any) {
+function mapBooking(row: any, includeInternalDetails: boolean) {
   const item = Array.isArray(row.booking_items) ? row.booking_items[0] : null;
   const task = Array.isArray(row.fulfillment_tasks) ? row.fulfillment_tasks[0] : row.fulfillment_tasks;
   const metadata = item?.metadata || {};
@@ -93,8 +95,10 @@ function mapBooking(row: any) {
     type: row.type,
     status: row.status,
     totalAmount: { amount: Number(row.customer_price || 0), currency: row.currency || 'PKR' },
-    supplierCost: { amount: Number(row.supplier_cost || 0), currency: row.currency || 'PKR' },
-    margin: { amount: Number(row.agency_margin || 0), currency: row.currency || 'PKR' },
+    ...(includeInternalDetails ? {
+      supplierCost: { amount: Number(row.supplier_cost || 0), currency: row.currency || 'PKR' },
+      margin: { amount: Number(row.agency_margin || 0), currency: row.currency || 'PKR' },
+    } : {}),
     userId: row.customer_id || '',
     contactEmail: row.contact_email,
     contactPhone: row.contact_phone,
@@ -106,8 +110,10 @@ function mapBooking(row: any) {
       id: task.id,
       bookingId: row.id,
       status: String(task.status || 'pending').toUpperCase(),
-      supplierName: task.supplier_name || undefined,
-      supplierReference: task.supplier_reference || undefined,
+      ...(includeInternalDetails ? {
+        supplierName: task.supplier_name || undefined,
+        supplierReference: task.supplier_reference || undefined,
+      } : {}),
       pnr: task.pnr || undefined,
       ticketNumber: task.ticket_number || undefined,
       hotelConfirmationNumber: task.hotel_confirmation_number || undefined,
@@ -205,7 +211,7 @@ export async function GET(_req: NextRequest) {
       booking_items: itemsByBooking.get(row.id) || [],
       booking_status_history: historyByBooking.get(row.id) || [],
       fulfillment_tasks: fulfillmentByBooking.get(row.id) || [],
-    }));
+    }, actor.role !== 'customer'));
 
     return successResponse({ bookings: result, total: result.length });
   } catch (err: any) {
@@ -228,7 +234,7 @@ export async function POST(req: NextRequest) {
     if (!['flight', 'hotel'].includes(body.type)) return errorResponse('Booking type is required', 'VALIDATION_ERROR', 400);
     if (!body.contactEmail || !body.contactPhone) return errorResponse('Contact details are required', 'VALIDATION_ERROR', 400);
 
-    const actor = await getServerActor();
+    const actor = await getServerActor(req.headers.get('cookie'));
     if (!actor || !['customer', 'agent', 'admin'].includes(actor.role)) {
       return errorResponse(
         'Login required to complete a booking. Flights and hotels can be viewed without an account.',
