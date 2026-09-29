@@ -69,3 +69,44 @@ $$;
 
 revoke all on function public.approve_wallet_topup(uuid, uuid) from public;
 grant execute on function public.approve_wallet_topup(uuid, uuid) to service_role;
+
+
+-- Harden the existing timestamp trigger and wallet ledger policy/indexes.
+create or replace function public.update_updated_at_column()
+returns trigger
+language plpgsql
+set search_path = public
+as $$
+begin
+  new.updated_at = now();
+  return new;
+end;
+$$;
+
+drop policy if exists "wallet_transactions_own_select" on public.wallet_transactions;
+drop policy if exists "wallet_transactions_admin_all" on public.wallet_transactions;
+
+create policy "wallet_transactions_select"
+on public.wallet_transactions
+for select to authenticated
+using (
+  exists (
+    select 1 from public.customers c
+    where c.id = wallet_transactions.customer_id
+      and c.user_id = (select auth.uid())
+  )
+  or exists (
+    select 1 from public.profiles p
+    where p.id = (select auth.uid())
+      and p.role = 'admin'
+  )
+);
+
+create index if not exists idx_wallet_transactions_wallet_id
+  on public.wallet_transactions(wallet_id);
+create index if not exists idx_wallet_transactions_created_by
+  on public.wallet_transactions(created_by);
+create index if not exists idx_wallet_topups_wallet_id
+  on public.wallet_topups(wallet_id);
+create index if not exists idx_wallet_topups_reviewed_by
+  on public.wallet_topups(reviewed_by);
