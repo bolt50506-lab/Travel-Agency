@@ -10,6 +10,7 @@ function logout(req: Request) {
   });
 
   const cookie = [
+    'voyagoAccessToken=',
     'voyago_access_token=',
     'Path=/',
     'HttpOnly',
