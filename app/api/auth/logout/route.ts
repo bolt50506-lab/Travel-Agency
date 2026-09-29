@@ -3,9 +3,13 @@ export const dynamic = 'force-dynamic';
 import { NextResponse } from 'next/server';
 
 function logout(req: Request) {
-  const url = new URL(req.url);
-  const secure = url.protocol === 'https:';
-  const response = NextResponse.redirect(new URL('/', req.url), {
+  const forwardedProto = req.headers.get('x-forwarded-proto')?.split(',')[0]?.trim().toLowerCase();
+  const forwardedHost = req.headers.get('x-forwarded-host')?.split(',')[0]?.trim();
+  const host = forwardedHost || req.headers.get('host')?.split(',')[0]?.trim();
+  const configuredOrigin = process.env.NEXT_PUBLIC_APP_URL?.trim().replace(/\/$/, '');
+  const origin = configuredOrigin || (host ? `${forwardedProto === 'http' ? 'http' : 'https'}://${host}` : new URL(req.url).origin);
+  const secure = origin.startsWith('https:');
+  const response = NextResponse.redirect(`${origin}/`, {
     headers: { 'Cache-Control': 'no-store, private' },
   });
 
