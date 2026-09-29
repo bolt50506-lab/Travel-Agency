@@ -28,7 +28,7 @@ export async function GET(req: NextRequest) {
     const { data: customers, error } = await query;
     if (error) throw error;
 
-    const rows = customers || [];
+    const rows = (customers || []) as Array<Record<string, unknown> & { id: string }>;
     const ids = rows.map((customer) => customer.id);
     const bookingsByCustomer = new Map<string, { count: number; total: number }>();
 
