@@ -481,3 +481,5 @@ export class DuffelFlightProvider implements IFlightProvider {
     };
   }
 }
+
+// Keep the provider module explicitly terminated for strict parsers/build environments.
