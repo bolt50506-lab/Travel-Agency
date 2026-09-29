@@ -162,7 +162,7 @@ export async function priceFlightOffer(offer: any, rules?: any[]) {
   return {
     ...offer,
     totalPrice: { amount: pricing.customerPrice, currency: 'PKR' },
-    pricingToken: sealPricingSnapshot({ supplierCost: pricing.supplierCost, taxes: pricing.taxes, customerPrice: pricing.customerPrice, expiresAt: Date.now() + 15 * 60 * 1000 }),
+    pricingToken: sealPricingSnapshot({ supplierCost: pricing.supplierCost, taxes: pricing.taxes, customerPrice: pricing.customerPrice, supplier: offer.provider, expiresAt: Date.now() + 15 * 60 * 1000 }),
   };
 }
 
@@ -186,6 +186,6 @@ export async function priceHotelRoom(room: any, hotel: any, rules?: any[]) {
     pricePerNight: { ...room.pricePerNight, amount: round(Number(room.pricePerNight?.amount || 0) * ratio) },
     totalPrice: { amount: pricing.customerPrice, currency: 'PKR' },
     taxesAndFees: { amount: pricing.taxes, currency: 'PKR' },
-    pricingToken: sealPricingSnapshot({ supplierCost: pricing.supplierCost, taxes: pricing.taxes, customerPrice: pricing.customerPrice, expiresAt: Date.now() + 15 * 60 * 1000 }),
+    pricingToken: sealPricingSnapshot({ supplierCost: pricing.supplierCost, taxes: pricing.taxes, customerPrice: pricing.customerPrice, supplier: hotel?.provider, expiresAt: Date.now() + 15 * 60 * 1000 }),
   };
 }
