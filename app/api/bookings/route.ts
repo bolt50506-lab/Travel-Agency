@@ -228,7 +228,7 @@ export async function POST(req: NextRequest) {
     if (!['flight', 'hotel'].includes(body.type)) return errorResponse('Booking type is required', 'VALIDATION_ERROR', 400);
     if (!body.contactEmail || !body.contactPhone) return errorResponse('Contact details are required', 'VALIDATION_ERROR', 400);
 
-    const actor = await getServerActor(req.headers.get('cookie'));
+    const actor = await getServerActor();
     if (!actor || !['customer', 'agent', 'admin'].includes(actor.role)) {
       return errorResponse(
         'Login required to complete a booking. Flights and hotels can be viewed without an account.',
