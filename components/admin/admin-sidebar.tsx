@@ -84,9 +84,9 @@ export function AdminSidebar() {
         <Link href="/" className="flex items-center gap-2 rounded-xl px-3 py-2 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground">
           ← View customer site
         </Link>
-        <Link href="/api/auth/logout" className="mt-1 flex items-center gap-2 rounded-xl px-3 py-2 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground">
+        <a href="/api/auth/logout" className="mt-1 flex items-center gap-2 rounded-xl px-3 py-2 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground">
           Sign out
-        </Link>
+        </a>
       </div>
     </aside>
   );
