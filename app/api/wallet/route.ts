@@ -53,7 +53,7 @@ async function getCustomer(actorId: string) {
   return data;
 }
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
     const actor = await getServerActor(req.headers.get('cookie'));
     if (!actor) return errorResponse('Login required', 'AUTH_REQUIRED', 401);
