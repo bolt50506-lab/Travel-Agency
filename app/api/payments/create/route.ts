@@ -1,3 +1,4 @@
+import crypto from 'crypto';
 import { NextRequest } from 'next/server';
 import { successResponse, errorResponse, validateBody } from '@/lib/utils/api';
 import { paymentSchema } from '@/lib/validation/schemas';
@@ -6,12 +7,12 @@ import { getServerActor } from '@/lib/auth/server';
 import { requireAgentRecord } from '@/lib/auth/agent';
 
 function paymentReference() {
-  return `PAY-${new Date().getFullYear()}-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
+  return `PAY-${new Date().getFullYear()}-${crypto.randomBytes(5).toString('hex').toUpperCase()}`;
 }
 
 export async function POST(req: NextRequest) {
   try {
-    const actor = await getServerActor();
+    const actor = await getServerActor(req.headers.get('cookie'));
 
     const validation = validateBody(paymentSchema, await req.json());
     if (!validation.success) return errorResponse(validation.error, 'VALIDATION_ERROR', 400);

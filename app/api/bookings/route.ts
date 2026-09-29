@@ -1,5 +1,6 @@
 export const dynamic = 'force-dynamic';
 
+import crypto from 'crypto';
 import { NextRequest } from 'next/server';
 import { successResponse, errorResponse } from '@/lib/utils/api';
 import { supabaseAdmin } from '@/lib/supabase/server';
@@ -8,7 +9,8 @@ import { requireAgentRecord } from '@/lib/auth/agent';
 import { calculateAgencyPrice, openPricingSnapshot } from '@/lib/services/pricing-service';
 
 function makeReference() {
-  return `AG-${new Date().getFullYear()}-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
+  const suffix = crypto.randomBytes(5).toString('hex').toUpperCase();
+  return `AG-${new Date().getFullYear()}-${suffix}`;
 }
 
 async function findCustomer(actorId: string, email: string, phone: string, name: string, agentMode: boolean) {
@@ -80,7 +82,7 @@ function customerVisibleDetails(details: any, type: 'flight' | 'hotel') {
   };
 }
 
-function mapBooking(row: any) {
+function mapBooking(row: any, includeInternalDetails: boolean) {
   const item = Array.isArray(row.booking_items) ? row.booking_items[0] : null;
   const task = Array.isArray(row.fulfillment_tasks) ? row.fulfillment_tasks[0] : row.fulfillment_tasks;
   const metadata = item?.metadata || {};
@@ -93,8 +95,10 @@ function mapBooking(row: any) {
     type: row.type,
     status: row.status,
     totalAmount: { amount: Number(row.customer_price || 0), currency: row.currency || 'PKR' },
-    supplierCost: { amount: Number(row.supplier_cost || 0), currency: row.currency || 'PKR' },
-    margin: { amount: Number(row.agency_margin || 0), currency: row.currency || 'PKR' },
+    ...(includeInternalDetails ? {
+      supplierCost: { amount: Number(row.supplier_cost || 0), currency: row.currency || 'PKR' },
+      margin: { amount: Number(row.agency_margin || 0), currency: row.currency || 'PKR' },
+    } : {}),
     userId: row.customer_id || '',
     contactEmail: row.contact_email,
     contactPhone: row.contact_phone,
@@ -106,8 +110,10 @@ function mapBooking(row: any) {
       id: task.id,
       bookingId: row.id,
       status: String(task.status || 'pending').toUpperCase(),
-      supplierName: task.supplier_name || undefined,
-      supplierReference: task.supplier_reference || undefined,
+      ...(includeInternalDetails ? {
+        supplierName: task.supplier_name || undefined,
+        supplierReference: task.supplier_reference || undefined,
+      } : {}),
       pnr: task.pnr || undefined,
       ticketNumber: task.ticket_number || undefined,
       hotelConfirmationNumber: task.hotel_confirmation_number || undefined,
@@ -205,7 +211,7 @@ export async function GET(_req: NextRequest) {
       booking_items: itemsByBooking.get(row.id) || [],
       booking_status_history: historyByBooking.get(row.id) || [],
       fulfillment_tasks: fulfillmentByBooking.get(row.id) || [],
-    }));
+    }, actor.role !== 'customer'));
 
     return successResponse({ bookings: result, total: result.length });
   } catch (err: any) {
@@ -228,7 +234,7 @@ export async function POST(req: NextRequest) {
     if (!['flight', 'hotel'].includes(body.type)) return errorResponse('Booking type is required', 'VALIDATION_ERROR', 400);
     if (!body.contactEmail || !body.contactPhone) return errorResponse('Contact details are required', 'VALIDATION_ERROR', 400);
 
-    const actor = await getServerActor();
+    const actor = await getServerActor(req.headers.get('cookie'));
     if (!actor || !['customer', 'agent', 'admin'].includes(actor.role)) {
       return errorResponse(
         'Login required to complete a booking. Flights and hotels can be viewed without an account.',
@@ -292,31 +298,34 @@ export async function POST(req: NextRequest) {
     const agentContactPhone = body.contactPhone || customer.phone || 'N/A';
     if (!agentContactEmail || !agentContactPhone) return errorResponse('Customer contact details are required', 'VALIDATION_ERROR', 400);
 
-    const pricingSnapshot = details.pricingToken ? openPricingSnapshot(String(details.pricingToken)) : null;
-    if (details.pricingToken && !pricingSnapshot) return errorResponse('The selected offer has expired. Please search again.', 'PRICING_EXPIRED', 409);
-    const inferredSupplierCost = pricingSnapshot
-      ? Number(pricingSnapshot.supplierCost)
-      : body.type === 'flight'
-        ? Number(details.basePrice?.amount || 0)
-        : Math.max(0, Number(details.room?.totalPrice?.amount || 0) - Number(details.room?.taxesAndFees?.amount || 0));
-    const supplierCost = Number(body.supplierCost ?? details.supplierCost ?? inferredSupplierCost);
-    const requestedPrice = Number(body.totalAmount?.amount ?? 0);
+    const pricingToken = String(details.pricingToken || '');
+    if (!pricingToken) return errorResponse('The selected offer must be revalidated before booking. Please search again.', 'PRICING_REVALIDATION_REQUIRED', 409);
+    const pricingSnapshot = openPricingSnapshot(pricingToken);
+    if (!pricingSnapshot) return errorResponse('The selected offer has expired. Please search again.', 'PRICING_EXPIRED', 409);
+    const supplierCost = Number(pricingSnapshot.supplierCost);
+    const requestedPrice = Number(pricingSnapshot.customerPrice);
+    const clientPrice = Number(body.totalAmount?.amount ?? details.totalPrice?.amount ?? 0);
+    if (!Number.isFinite(clientPrice) || Math.abs(clientPrice - requestedPrice) > 0.01) {
+      return errorResponse('The selected offer price has changed. Please search again.', 'PRICING_MISMATCH', 409);
+    }
     const currency = String(body.totalAmount?.currency || 'PKR').toUpperCase();
     if (currency !== 'PKR') return errorResponse('Only PKR bookings are supported', 'CURRENCY_NOT_SUPPORTED', 400);
     if (!Number.isFinite(supplierCost) || supplierCost < 0) return errorResponse('Invalid supplier cost', 'VALIDATION_ERROR', 400);
     if (!Number.isFinite(requestedPrice) || requestedPrice <= 0) return errorResponse('A positive booking amount is required', 'VALIDATION_ERROR', 400);
     if (supplierCost > requestedPrice) return errorResponse('Selling price cannot be below supplier cost', 'PRICE_BELOW_COST', 409);
 
-    const inferredTaxes = pricingSnapshot
-      ? Number(pricingSnapshot.taxes)
-      : body.type === 'flight'
-        ? Number(details.taxesAndFees?.amount || 0)
-        : Number(details.room?.taxesAndFees?.amount || 0);
-    const taxes = Number(body.taxes ?? inferredTaxes ?? 0);
-    const fees = Number(body.fees || 0);
-    const discount = Number(body.discount || 0);
+    const taxes = Number(pricingSnapshot.taxes || 0);
+    const fees = 0;
+    const discount = 0;
     if (![taxes, fees, discount].every(Number.isFinite) || taxes < 0 || fees < 0 || discount < 0) {
       return errorResponse('Invalid taxes, fees or discount', 'VALIDATION_ERROR', 400);
+    }
+
+    if (agent) {
+      const commissionRate = Number(agent.commission_rate || 0);
+      if (!Number.isFinite(commissionRate) || commissionRate < 0 || commissionRate > 100) {
+        return errorResponse('Agent commission percentage must be between 0% and 100%', 'INVALID_COMMISSION_RATE', 409);
+      }
     }
 
     const pricing = await calculateAgencyPrice({
@@ -327,7 +336,7 @@ export async function POST(req: NextRequest) {
       requestedCustomerPrice: requestedPrice,
       context: {
         product: body.type,
-        supplier: body.supplierName || details.supplier,
+        supplier: pricingSnapshot.supplier || 'unverified_supplier',
         airline: details.airline?.code || details.airlineCode,
         route: details.segments?.[0]?.origin?.code && details.segments?.[0]?.destination?.code
           ? `${details.segments[0].origin.code}-${details.segments[0].destination.code}`
@@ -337,6 +346,7 @@ export async function POST(req: NextRequest) {
       },
     });
 
+    const customerSafeDetails = customerVisibleDetails(details, body.type);
     const reference = makeReference();
     const { data: booking, error } = await supabaseAdmin.from('bookings').insert({
       reference,
@@ -356,7 +366,7 @@ export async function POST(req: NextRequest) {
       customer_price: pricing.customerPrice,
       agency_margin: pricing.agencyMargin,
       currency: 'PKR',
-      supplier_name: body.supplierName || details.supplier || null,
+      supplier_name: pricingSnapshot.supplier || null,
       automatic_supplier_booking_enabled: false,
       notes: body.notes || null,
     }).select('*').single();
@@ -371,12 +381,12 @@ export async function POST(req: NextRequest) {
         : `${details.name || 'Hotel'} — ${details.room?.type || 'Room'}`,
       supplier_offer_id: details.id || null,
       supplier_property_id: body.type === 'hotel' ? details.id || null : null,
-      supplier_provider: String(body.supplierName || details.provider || ''),
-      supplier_api: String(body.supplierApi || details.provider || details.apiSource || 'manual_supplier'),
+      supplier_provider: String(pricingSnapshot.supplier || 'verified_offer'),
+      supplier_api: 'pricing_snapshot',
       supplier_cost: pricing.supplierCost,
       customer_price: pricing.customerPrice,
       currency: 'PKR',
-      metadata: details,
+      metadata: customerSafeDetails,
     })).error;
     if (itemError) console.error('Booking item warning:', itemError);
 
@@ -397,10 +407,6 @@ export async function POST(req: NextRequest) {
 
     if (agent) {
       const commissionRate = Number(agent.commission_rate || 0);
-      if (!Number.isFinite(commissionRate) || commissionRate < 0 || commissionRate > 100) {
-        return errorResponse('Agent commission percentage must be between 0% and 100%', 'INVALID_COMMISSION_RATE', 409);
-      }
-
       const commissionAmount = Math.round((pricing.agencyMargin * commissionRate) * 100) / 100;
       const { error: commissionError } = await supabaseAdmin.from('agent_commissions').insert({
         booking_id: booking.id,
@@ -441,13 +447,10 @@ export async function POST(req: NextRequest) {
       status: booking.status,
       paymentStatus: 'pending',
       pricing: {
-        supplierCost: pricing.supplierCost,
-        markup: pricing.markup,
+        customerPrice: pricing.customerPrice,
         taxes: pricing.taxes,
         fees: pricing.fees,
         discount: pricing.discount,
-        customerPrice: pricing.customerPrice,
-        agencyMargin: pricing.agencyMargin,
       },
       message: 'Booking request received. The agency will complete supplier fulfillment after payment verification.',
     }, 201);

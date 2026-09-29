@@ -30,7 +30,7 @@ function pricingSecret() {
   return crypto.createHash('sha256').update(secret).digest();
 }
 
-function sealPricingSnapshot(snapshot: { supplierCost: number; taxes: number; customerPrice: number; expiresAt: number }) {
+function sealPricingSnapshot(snapshot: { supplierCost: number; taxes: number; customerPrice: number; expiresAt: number; supplier?: string | null }) {
   const iv = crypto.randomBytes(12);
   const cipher = crypto.createCipheriv('aes-256-gcm', pricingSecret(), iv);
   const encrypted = Buffer.concat([cipher.update(JSON.stringify(snapshot), 'utf8'), cipher.final()]);
@@ -38,8 +38,8 @@ function sealPricingSnapshot(snapshot: { supplierCost: number; taxes: number; cu
   return Buffer.concat([iv, tag, encrypted]).toString('base64url');
 }
 
-export function sealRevalidationToken(pricing: { supplierCost: number; taxes: number; customerPrice: number }) {
-  return sealPricingSnapshot({ supplierCost: pricing.supplierCost, taxes: pricing.taxes, customerPrice: pricing.customerPrice, expiresAt: Date.now() + 15 * 60 * 1000 });
+export function sealRevalidationToken(pricing: { supplierCost: number; taxes: number; customerPrice: number; supplier?: string | null }) {
+  return sealPricingSnapshot({ supplierCost: pricing.supplierCost, taxes: pricing.taxes, customerPrice: pricing.customerPrice, supplier: pricing.supplier, expiresAt: Date.now() + 15 * 60 * 1000 });
 }
 
 export function openPricingSnapshot(token: string) {
@@ -52,7 +52,7 @@ export function openPricingSnapshot(token: string) {
     const decipher = crypto.createDecipheriv('aes-256-gcm', pricingSecret(), iv);
     decipher.setAuthTag(tag);
     const snapshot = JSON.parse(Buffer.concat([decipher.update(encrypted), decipher.final()]).toString('utf8')) as {
-      supplierCost: number; taxes: number; customerPrice: number; expiresAt: number;
+      supplierCost: number; taxes: number; customerPrice: number; expiresAt: number; supplier?: string | null;
     };
     if (!snapshot.expiresAt || snapshot.expiresAt < Date.now()) return null;
     return snapshot;
@@ -162,7 +162,7 @@ export async function priceFlightOffer(offer: any, rules?: any[]) {
   return {
     ...offer,
     totalPrice: { amount: pricing.customerPrice, currency: 'PKR' },
-    pricingToken: sealPricingSnapshot({ supplierCost: pricing.supplierCost, taxes: pricing.taxes, customerPrice: pricing.customerPrice, expiresAt: Date.now() + 15 * 60 * 1000 }),
+    pricingToken: sealPricingSnapshot({ supplierCost: pricing.supplierCost, taxes: pricing.taxes, customerPrice: pricing.customerPrice, supplier: offer.provider, expiresAt: Date.now() + 15 * 60 * 1000 }),
   };
 }
 
@@ -186,6 +186,6 @@ export async function priceHotelRoom(room: any, hotel: any, rules?: any[]) {
     pricePerNight: { ...room.pricePerNight, amount: round(Number(room.pricePerNight?.amount || 0) * ratio) },
     totalPrice: { amount: pricing.customerPrice, currency: 'PKR' },
     taxesAndFees: { amount: pricing.taxes, currency: 'PKR' },
-    pricingToken: sealPricingSnapshot({ supplierCost: pricing.supplierCost, taxes: pricing.taxes, customerPrice: pricing.customerPrice, expiresAt: Date.now() + 15 * 60 * 1000 }),
+    pricingToken: sealPricingSnapshot({ supplierCost: pricing.supplierCost, taxes: pricing.taxes, customerPrice: pricing.customerPrice, supplier: hotel?.provider, expiresAt: Date.now() + 15 * 60 * 1000 }),
   };
 }

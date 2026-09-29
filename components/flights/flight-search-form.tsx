@@ -136,7 +136,7 @@ export function FlightSearchForm() {
           </div>
 
           <p className="text-xs text-muted-foreground">
-            Use the airport's 3-letter IATA code. Search results and prices come directly from the configured flight provider.
+            Use the airport&apos;s 3-letter IATA code. Search results and prices come directly from the configured flight provider.
           </p>
 
           <div className="grid gap-4 sm:grid-cols-2">
