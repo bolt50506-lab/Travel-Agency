@@ -53,7 +53,7 @@ async function getCustomer(actorId: string) {
   return data;
 }
 
-export async function GET(req: NextRequest) {
+export async function GET() {
   try {
     const actor = await getServerActor(req.headers.get('cookie'));
     if (!actor) return errorResponse('Login required', 'AUTH_REQUIRED', 401);
@@ -258,3 +258,36 @@ export async function PATCH(req: NextRequest) {
     console.error('Wallet PATCH error:', err);
     return errorResponse('Unable to review wallet top-up', 'WALLET_REVIEW_FAILED', 500);
   }
+}
+
+export async function DELETE(req: NextRequest) {
+  try {
+    const actor = await getServerActor(req.headers.get('cookie'));
+    if (!actor) return errorResponse('Login required', 'AUTH_REQUIRED', 401);
+    if (actor.role !== 'customer') return errorResponse('Customer access required', 'FORBIDDEN', 403);
+
+    const body = await req.json();
+    const topupId = String(body.topupId || '');
+    if (!topupId) return errorResponse('Top-up is required.', 'VALIDATION_ERROR', 400);
+
+    const customer = await getCustomer(actor.id);
+    if (!customer) return errorResponse('Customer profile not found.', 'CUSTOMER_NOT_FOUND', 404);
+
+    const { data, error } = await supabaseAdmin
+      .from('wallet_topups')
+      .update({ status: 'CANCELLED' })
+      .eq('id', topupId)
+      .eq('customer_id', customer.id)
+      .eq('status', 'PENDING')
+      .select('id,status')
+      .maybeSingle();
+
+    if (error) throw error;
+    if (!data) return errorResponse('Top-up cannot be cancelled.', 'TOPUP_NOT_CANCELLABLE', 409);
+
+    return successResponse({ topup: data });
+  } catch (err) {
+    console.error('Wallet DELETE error:', err);
+    return errorResponse('Unable to cancel top-up', 'WALLET_TOPUP_CANCEL_FAILED', 500);
+  }
+}
