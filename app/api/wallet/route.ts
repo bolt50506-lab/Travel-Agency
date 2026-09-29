@@ -221,11 +221,44 @@ export async function PATCH(req: NextRequest) {
     if (!topup) return errorResponse('Top-up request not found.', 'NOT_FOUND', 404);
     if (topup.status !== 'PENDING') return errorResponse('This top-up has already been reviewed.', 'ALREADY_REVIEWED', 409);
 
-    const nextStatus = action === 'approve' ? 'APPROVED' : 'REJECTED';
+    if (action === 'approve') {
+      const { data: credited, error: creditError } = await supabaseAdmin.rpc('approve_wallet_topup', {
+        p_topup_id: topupId,
+        p_actor_id: actor.id,
+      });
+
+      if (creditError) {
+        const message = String(creditError.message || '');
+        if (message.includes('WALLET_TOPUP_ALREADY_REVIEWED')) {
+          return errorResponse('This top-up has already been reviewed.', 'ALREADY_REVIEWED', 409);
+        }
+        if (message.includes('WALLET_TOPUP_NOT_FOUND')) {
+          return errorResponse('Top-up request not found.', 'NOT_FOUND', 404);
+        }
+        if (message.includes('WALLET_NOT_FOUND')) {
+          return errorResponse('Wallet not found.', 'WALLET_NOT_FOUND', 404);
+        }
+        throw creditError;
+      }
+
+      const { data: updated, error: reloadError } = await supabaseAdmin
+        .from('wallet_topups')
+        .select('*')
+        .eq('id', topupId)
+        .single();
+      if (reloadError || !updated) throw reloadError || new Error('Approved top-up could not be reloaded');
+
+      return successResponse({
+        topup: updated,
+        walletBalance: Number(credited?.[0]?.new_balance ?? 0),
+        message: 'Wallet credited.',
+      });
+    }
+
     const { data: updated, error: updateError } = await supabaseAdmin
       .from('wallet_topups')
       .update({
-        status: nextStatus,
+        status: 'REJECTED',
         reviewed_by: actor.id,
         reviewed_at: new Date().toISOString(),
         review_note: reviewNote || null,
@@ -237,21 +270,6 @@ export async function PATCH(req: NextRequest) {
 
     if (updateError) throw updateError;
     if (!updated) return errorResponse('This top-up was reviewed by another request.', 'ALREADY_REVIEWED', 409);
-
-    if (action === 'approve') {
-      const { data: wallet, error: walletLoadError } = await supabaseAdmin
-        .from('customer_wallets')
-        .select('id,balance')
-        .eq('id', topup.wallet_id)
-        .maybeSingle();
-      if (walletLoadError || !wallet) throw walletLoadError || new Error('Wallet not found');
-
-      const { error: balanceError } = await supabaseAdmin
-        .from('customer_wallets')
-        .update({ balance: Number(wallet.balance || 0) + Number(topup.amount) })
-        .eq('id', wallet.id);
-      if (balanceError) throw balanceError;
-    }
 
     return successResponse({ topup: updated, message: action === 'approve' ? 'Wallet credited.' : 'Top-up rejected.' });
   } catch (err) {
