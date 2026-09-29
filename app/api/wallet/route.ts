@@ -55,7 +55,7 @@ async function getCustomer(actorId: string) {
 
 export async function GET(req: NextRequest) {
   try {
-    const actor = await getServerActor(req.headers.get('cookie'));
+    const actor = await getServerActor();
     if (!actor) return errorResponse('Login required', 'AUTH_REQUIRED', 401);
     if (actor.role !== 'customer') return errorResponse('Customer access required', 'FORBIDDEN', 403);
 
@@ -113,7 +113,7 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const actor = await getServerActor(req.headers.get('cookie'));
+    const actor = await getServerActor();
     if (!actor) return errorResponse('Login required', 'AUTH_REQUIRED', 401);
     if (actor.role !== 'customer') return errorResponse('Customer access required', 'FORBIDDEN', 403);
 
@@ -262,7 +262,7 @@ export async function PATCH(req: NextRequest) {
 
 export async function DELETE(req: NextRequest) {
   try {
-    const actor = await getServerActor(req.headers.get('cookie'));
+    const actor = await getServerActor();
     if (!actor) return errorResponse('Login required', 'AUTH_REQUIRED', 401);
     if (actor.role !== 'customer') return errorResponse('Customer access required', 'FORBIDDEN', 403);
 
