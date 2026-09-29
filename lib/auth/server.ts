@@ -2,6 +2,9 @@ import crypto from 'crypto';
 import { cookies, headers } from 'next/headers';
 import { supabaseAdmin } from '@/lib/supabase/server';
 
+export const SESSION_COOKIE_NAME = 'voyagoAccessToken';
+const LEGACY_SESSION_COOKIE_NAME = 'voyago_access_token';
+
 export type ServerActor = {
   id: string;
   email: string;
@@ -92,10 +95,14 @@ function readSessionToken(cookieHeader?: string | null) {
   // When a route handler provides the request Cookie header, use that exact
   // header first. This removes any ambiguity between request-scoped Next.js
   // cookie state and the actual browser request reaching the API route.
-  const rawHeaderToken = readCookieHeader(cookieHeader ?? headers().get('cookie'), 'voyago_access_token');
+  const header = cookieHeader ?? headers().get('cookie');
+  const rawHeaderToken = readCookieHeader(header, SESSION_COOKIE_NAME);
   if (rawHeaderToken) return rawHeaderToken;
 
-  return cookies().get('voyago_access_token')?.value || null;
+  const legacyHeaderToken = readCookieHeader(header, LEGACY_SESSION_COOKIE_NAME);
+  if (legacyHeaderToken) return legacyHeaderToken;
+
+  return cookies().get(SESSION_COOKIE_NAME)?.value || cookies().get(LEGACY_SESSION_COOKIE_NAME)?.value || null;
 }
 
 export async function getServerActor(cookieHeader?: string | null): Promise<ServerActor | null> {
