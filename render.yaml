@@ -17,7 +17,7 @@ services:
       - key: LOCAL_AUTH_SECRET
         generateValue: true
       - key: NEXT_PUBLIC_APP_URL
-        sync: false
+        value: https://destino-travels.onrender.com
       - key: FLIGHT_PROVIDER
         value: multi
       - key: FLIGHT_PROVIDERS
