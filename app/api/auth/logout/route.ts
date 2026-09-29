@@ -9,17 +9,10 @@ function logout(req: Request) {
     headers: { 'Cache-Control': 'no-store, private' },
   });
 
-  const cookie = [
-    'voyagoAccessToken=',
-    'voyago_access_token=',
-    'Path=/',
-    'HttpOnly',
-    'SameSite=Lax',
-    'Max-Age=0',
-    'Expires=Thu, 01 Jan 1970 00:00:00 GMT',
-  ];
-  if (secure) cookie.push('Secure');
-  response.headers.set('Set-Cookie', cookie.join('; '));
+  const cookieAttributes = ['Path=/', 'HttpOnly', 'SameSite=Lax', 'Max-Age=0', 'Expires=Thu, 01 Jan 1970 00:00:00 GMT'];
+  if (secure) cookieAttributes.push('Secure');
+  response.headers.append('Set-Cookie', ['voyagoAccessToken=', ...cookieAttributes].join('; '));
+  response.headers.append('Set-Cookie', ['voyago_access_token=', ...cookieAttributes].join('; '));
   return response;
 }
 
