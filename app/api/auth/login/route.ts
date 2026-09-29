@@ -5,7 +5,7 @@ import { NextRequest } from 'next/server';
 import { loginSchema } from '@/lib/validation/schemas';
 import { successResponse, errorResponse, validateBody } from '@/lib/utils/api';
 import { supabaseAdmin } from '@/lib/supabase/server';
-import { createSessionToken } from '@/lib/auth/server';
+import { createSessionToken, SESSION_COOKIE_NAME } from '@/lib/auth/server';
 
 function verifyPassword(password: string, stored: string) {
   const [scheme, n, r, p, salt, encodedHash] = stored.split('$');
@@ -60,7 +60,7 @@ export async function POST(req: NextRequest) {
     });
 
     response.cookies.set({
-      name: 'voyago_access_token',
+      name: SESSION_COOKIE_NAME,
       value: token,
       httpOnly: true,
       secure: isSecureRequest,
