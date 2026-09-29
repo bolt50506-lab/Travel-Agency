@@ -16,18 +16,6 @@ function verifyPassword(password: string, stored: string) {
   return a.length === b.length && crypto.timingSafeEqual(a, b);
 }
 
-function sessionCookie(token: string, secure: boolean) {
-  const attributes = [
-    `voyago_access_token=${encodeURIComponent(token)}`,
-    'Path=/',
-    'HttpOnly',
-    'SameSite=Lax',
-    `Max-Age=${7 * 24 * 60 * 60}`,
-  ];
-  if (secure) attributes.push('Secure');
-  return attributes.join('; ');
-}
-
 export async function POST(req: NextRequest) {
   try {
     const validation = validateBody(loginSchema, await req.json());
@@ -71,9 +59,15 @@ export async function POST(req: NextRequest) {
       expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
     });
 
-    // Explicit Set-Cookie avoids framework helper differences and makes the
-    // browser session deterministic on both localhost HTTP and HTTPS.
-    response.headers.set('Set-Cookie', sessionCookie(token, isSecureRequest));
+    response.cookies.set({
+      name: 'voyago_access_token',
+      value: token,
+      httpOnly: true,
+      secure: isSecureRequest,
+      sameSite: 'lax',
+      path: '/',
+      maxAge: 7 * 24 * 60 * 60,
+    });
     response.headers.set('Cache-Control', 'no-store, private');
     return response;
   } catch (err) {
