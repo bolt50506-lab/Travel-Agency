@@ -480,3 +480,4 @@ export class DuffelFlightProvider implements IFlightProvider {
       createdAt: order.created_at || new Date().toISOString(),
     };
   }
+}
